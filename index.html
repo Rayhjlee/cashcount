@@ -569,6 +569,7 @@ async function submitReport(){
       petty_actual: '$'+pettyActual.toFixed(2),
       petty_diff: '$'+diff.toFixed(2),
       pdf_base64: pdfBase64,
+      photos: photoB64.map(b=>b.split(',')[1]),
     };
 
     const response=await fetch(gasUrl,{method:'POST',body:JSON.stringify(payload)});
@@ -576,10 +577,11 @@ async function submitReport(){
 
     if(result.status==='success'){
       statusEl.className='status-msg status-success';
-      statusEl.textContent='✅ Report sent! PDF attached to email.';
+      statusEl.textContent='✅ Report sent successfully!';
       statusEl.style.display='block';
-      btn.textContent='✅ Sent';
+      btn.textContent='✅ Sent — Send Again';
       btn.style.background='#1a7a1a';
+      btn.disabled=false;
     } else {
       throw new Error(result.message||'Server error');
     }
@@ -589,11 +591,47 @@ async function submitReport(){
     statusEl.textContent='Failed: '+(err.message||'Please try again');
     statusEl.style.display='block';
     btn.disabled=false;
+    btn.style.background='';
     btn.textContent='✉️ Send Report (with PDF)';
   }
 }
 
+// Auto-save inputs to localStorage
+function saveFormData(){
+  const data={};
+  document.querySelectorAll('.notes-count,.coins-count,.purch-amt,.purch-store').forEach((el,i)=>{
+    data['inp_'+el.className.split(' ')[0]+'_'+i]=el.value;
+  });
+  data['opening-float']=document.getElementById('opening-float').value;
+  data['petty-opening']=document.getElementById('petty-opening').value;
+  data['petty-actual']=document.getElementById('petty-actual').value;
+  data['inp-staff']=document.getElementById('inp-staff').value;
+  data['inp-date']=document.getElementById('inp-date').value;
+  localStorage.setItem('cashform',JSON.stringify(data));
+}
+
+function restoreFormData(){
+  try{
+    const data=JSON.parse(localStorage.getItem('cashform')||'{}');
+    const saved=data['inp-date'];
+    const today=new Date().toISOString().split('T')[0];
+    // Only restore if same day
+    if(saved!==today) return;
+    document.querySelectorAll('.notes-count,.coins-count,.purch-amt,.purch-store').forEach((el,i)=>{
+      const v=data['inp_'+el.className.split(' ')[0]+'_'+i];
+      if(v) el.value=v;
+    });
+    ['opening-float','petty-opening','petty-actual','inp-staff'].forEach(id=>{
+      const v=data[id];
+      if(v) document.getElementById(id).value=v;
+    });
+    calcAll();
+  }catch(e){}
+}
+
+document.querySelectorAll('input').forEach(i=>i.addEventListener('input',saveFormData));
 document.getElementById('inp-date').value=new Date().toISOString().split('T')[0];
+restoreFormData();
 </script>
 </body>
 </html>
