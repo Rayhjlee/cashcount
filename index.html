@@ -26,7 +26,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .app-header h1{font-size:17px;font-weight:700;letter-spacing:.5px}
 .app-header .sub{font-size:11px;opacity:.65;margin-top:2px}
 
-.top-info{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:#fff;border-bottom:1px solid var(--border)}
+.top-info{display:grid;grid-template-columns:1fr;gap:10px;padding:12px;background:#fff;border-bottom:1px solid var(--border)}
 .info-field{display:flex;flex-direction:column;gap:4px}
 .info-field label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}
 .info-field input{font-size:16px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;color:var(--text);outline:none;width:100%}
@@ -331,23 +331,30 @@ document.querySelectorAll('input[type=number]').forEach(i=>i.addEventListener('i
 
 // Photos
 document.getElementById('photo-input').addEventListener('change', e=>{
-  const files=Array.from(e.target.files).slice(0,5);
-  photoB64.length=0;
+  const files=Array.from(e.target.files);
+  const remaining=5-photoB64.length;
+  if(remaining<=0){ alert('Maximum 5 photos allowed'); return; }
+  const toAdd=files.slice(0,remaining);
   const prev=document.getElementById('photo-preview');
-  prev.innerHTML='';
-  document.getElementById('photo-count').textContent='';
-  files.forEach(f=>{
+  toAdd.forEach(f=>{
     const reader=new FileReader();
     reader.onload=ev=>{
       photoB64.push(ev.target.result);
       const img=document.createElement('img');
       img.src=ev.target.result;
       img.className='photo-thumb';
+      img.onclick=function(){
+        const idx=Array.from(prev.children).indexOf(img);
+        photoB64.splice(idx,1);
+        img.remove();
+        document.getElementById('photo-count').textContent=photoB64.length>0?`${photoB64.length} photo(s) — tap to remove`:'';
+      };
       prev.appendChild(img);
-      document.getElementById('photo-count').textContent=`${photoB64.length} photo(s) selected`;
+      document.getElementById('photo-count').textContent=`${photoB64.length} photo(s) — tap to remove`;
     };
     reader.readAsDataURL(f);
   });
+  e.target.value='';
 });
 
 function toggleSetup(){
@@ -365,12 +372,11 @@ function saveSettings(){
   setTimeout(()=>m.style.display='none',2000);
 }
 
+const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbxkMsnC-XxmH-AckIuz9g4q4GHbuHW0ZHRLSezYSkFfJN-l-PbJp7Zi9O0TMjRTUzJk/exec';
+const DEFAULT_TO='umihornsby@gmail.com';
 function loadSettings(){
-  const url=localStorage.getItem('gas-url');
-  const to=localStorage.getItem('to-email');
-  if(url) document.getElementById('gas-url').value=url;
-  if(to) document.getElementById('to-email').value=to;
-  else document.getElementById('to-email').value='umihornsby@gmail.com';
+  document.getElementById('gas-url').value=localStorage.getItem('gas-url')||DEFAULT_GAS_URL;
+  document.getElementById('to-email').value=localStorage.getItem('to-email')||DEFAULT_TO;
 }
 loadSettings();
 
