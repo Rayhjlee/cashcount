@@ -285,26 +285,28 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.10 — 2026.05.26</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.11 — 2026.05.26</div>
 </div>
 
 <script>
 const fmt = v => '$' + parseFloat(v||0).toFixed(2);
 const photoB64 = [];
+let pendingCompressions = 0;
 
 function compressImage(file, callback) {
+  pendingCompressions++;
   const reader = new FileReader();
   reader.onload = ev => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const maxW = 600;
+      const maxW = 800;
       const scale = Math.min(1, maxW / img.width);
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      // Return base64 only (no data:image prefix)
       const full = canvas.toDataURL('image/jpeg', 0.8);
+      pendingCompressions--;
       callback(full.split(',')[1]);
     };
     img.src = ev.target.result;
@@ -563,6 +565,12 @@ async function submitReport(){
   btn.disabled=true;
   btn.textContent='⏳ Sending...';
   statusEl.style.display='none';
+
+  // Wait for any pending photo compressions
+  await new Promise(resolve=>{
+    const check=()=>{ pendingCompressions===0?resolve():setTimeout(check,100); };
+    check();
+  });
 
   try{
 
