@@ -285,7 +285,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.12 — 2026.05.26</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.14 — 2026.05.26</div>
 </div>
 
 <script>
@@ -297,17 +297,7 @@ function compressImage(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxW = 800;
-        const scale = Math.min(1, maxW / img.width);
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
-      };
-      img.src = ev.target.result;
+      resolve(ev.target.result.split(',')[1]);
     };
     reader.readAsDataURL(file);
   });
@@ -395,7 +385,7 @@ function saveSettings(){
   setTimeout(()=>m.style.display='none',2000);
 }
 
-const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbwjhu3x2KmmV3HCdir8KecyhEGwUcTFVlhNQwIa6vepj-PacfqhjqQMo1sck81jROBM/exec';
+const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbx256LS9AeRuB7mqBZDWujRUIkmshMWx2nlEW6TIpmWaOhmq90KS-0fiF1aMaz22H7o/exec';
 const DEFAULT_TO='umihornsby@gmail.com';
 function loadSettings(){
   document.getElementById('gas-url').value=localStorage.getItem('gas-url')||DEFAULT_GAS_URL;
@@ -565,6 +555,11 @@ async function submitReport(){
   btn.disabled=true;
   btn.textContent='⏳ Sending...';
   statusEl.style.display='none';
+
+  console.log('Photos count:', photoB64.length);
+  if(photoB64.length>0){
+    console.log('First photo length:', photoB64[0].length);
+  }
 
   try{
 
