@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Daily Cash Count Sheet</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{
   --blue:#1a2a4a;
@@ -27,7 +26,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .app-header .sub{font-size:11px;opacity:.65;margin-top:2px}
 
 .top-info{display:flex;flex-direction:column;gap:10px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);width:100%}
-.info-field{display:flex;flex-direction:column;gap:4px}
+.info-field{display:flex;flex-direction:column;gap:4px;width:100%}
 .info-field label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}
 .info-field input{font-size:16px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;color:var(--text);outline:none;width:100%;max-width:100%}
 .info-field input:focus{border-color:var(--notes-blue);background:#fff}
@@ -111,8 +110,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .btn-send{width:100%;padding:18px;background:var(--blue);color:#fff;border:none;font-size:16px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(26,42,74,0.25)}
 .btn-send:active{transform:scale(0.98)}
 .btn-send:disabled{background:#aaa;box-shadow:none}
-.btn-pdf{width:100%;padding:14px;background:#fff;color:var(--blue);border:2px solid var(--blue);font-size:15px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-pdf:active{transform:scale(0.98)}
+.btn-clear{width:100%;padding:13px;background:#fff;color:#cc2222;border:2px solid #cc2222;font-size:14px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-clear:active{transform:scale(0.98)}
 .status-msg{padding:14px;text-align:center;font-size:14px;font-weight:600;border-radius:10px;display:none}
 .status-success{background:#d4edda;color:#155724}
 .status-error{background:#f8d7da;color:#721c24}
@@ -278,10 +277,13 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 <div class="send-section">
   <div id="status-msg" class="status-msg"></div>
   <button class="btn-send" id="submit-btn" onclick="submitReport()">
-    ✉️ Send Report (with PDF)
+    ✉️ Send Report
   </button>
   <button class="btn-pdf" onclick="downloadPDF()">
     📄 Save PDF only
+  </button>
+  <button class="btn-clear" onclick="clearAll()">
+    🗑️ Clear All Data
   </button>
 </div>
 
@@ -540,12 +542,10 @@ async function submitReport(){
   }
 
   btn.disabled=true;
-  btn.textContent='⏳ Generating PDF...';
+  btn.textContent='⏳ Sending...';
   statusEl.style.display='none';
 
   try{
-    const pdfBase64=await generatePDFBase64();
-    btn.textContent='⏳ Sending email...';
 
     const pettyOpen=parseFloat(document.getElementById('petty-opening').value||0);
     const totalPurch=parseFloat(document.getElementById('total-purchases').textContent.replace('$',''));
@@ -568,7 +568,6 @@ async function submitReport(){
       petty_expected: '$'+expected.toFixed(2),
       petty_actual: '$'+pettyActual.toFixed(2),
       petty_diff: '$'+diff.toFixed(2),
-      pdf_base64: pdfBase64,
       photos: photoB64.map(b=>b.split(',')[1]),
     };
 
@@ -629,9 +628,31 @@ function restoreFormData(){
   }catch(e){}
 }
 
+function clearAll(){
+  if(!confirm('Clear all data? This cannot be undone.')) return;
+  localStorage.removeItem('cashform');
+  document.querySelectorAll('input[type=number]').forEach(i=>i.value='');
+  document.getElementById('inp-staff').value='';
+  document.getElementById('photo-preview').innerHTML='';
+  document.getElementById('photo-count').textContent='';
+  photoB64.length=0;
+  calcAll();
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=false;
+  btn.textContent='✉️ Send Report';
+  btn.style.background='';
+  document.getElementById('status-msg').style.display='none';
+}
+
 document.querySelectorAll('input').forEach(i=>i.addEventListener('input',saveFormData));
-document.getElementById('inp-date').value=new Date().toISOString().split('T')[0];
-restoreFormData();
+const today=new Date().toISOString().split('T')[0];
+document.getElementById('inp-date').value=today;
+const lastDate=JSON.parse(localStorage.getItem('cashform')||'{}')['inp-date'];
+if(lastDate && lastDate!==today){
+  localStorage.removeItem('cashform');
+} else {
+  restoreFormData();
+}
 </script>
 </body>
 </html>
