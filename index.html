@@ -285,7 +285,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.11 — 2026.05.26</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.12 — 2026.05.26</div>
 </div>
 
 <script>
@@ -293,25 +293,24 @@ const fmt = v => '$' + parseFloat(v||0).toFixed(2);
 const photoB64 = [];
 let pendingCompressions = 0;
 
-function compressImage(file, callback) {
-  pendingCompressions++;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const maxW = 800;
-      const scale = Math.min(1, maxW / img.width);
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      const full = canvas.toDataURL('image/jpeg', 0.8);
-      pendingCompressions--;
-      callback(full.split(',')[1]);
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxW = 800;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+      };
+      img.src = ev.target.result;
     };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
 }
 
 function calcAll(){
@@ -355,28 +354,29 @@ function calcAll(){
 document.querySelectorAll('input[type=number]').forEach(i=>i.addEventListener('input',calcAll));
 
 // Photos
-document.getElementById('photo-input').addEventListener('change', e=>{
+document.getElementById('photo-input').addEventListener('change', async e=>{
   const files=Array.from(e.target.files);
   const remaining=5-photoB64.length;
   if(remaining<=0){ alert('Maximum 5 photos allowed'); return; }
   const toAdd=files.slice(0,remaining);
   const prev=document.getElementById('photo-preview');
-  toAdd.forEach(f=>{
-    compressImage(f, compressed=>{
-      photoB64.push(compressed);
-      const img=document.createElement('img');
-      img.src='data:image/jpeg;base64,'+compressed;
-      img.className='photo-thumb';
-      img.onclick=function(){
-        const idx=Array.from(prev.children).indexOf(img);
-        photoB64.splice(idx,1);
-        img.remove();
-        document.getElementById('photo-count').textContent=photoB64.length>0?`${photoB64.length} photo(s) — tap to remove`:'';
-      };
-      prev.appendChild(img);
-      document.getElementById('photo-count').textContent=`${photoB64.length} photo(s) — tap to remove`;
-    });
-  });
+  const countEl=document.getElementById('photo-count');
+  countEl.textContent='Compressing...';
+  for(const f of toAdd){
+    const compressed=await compressImage(f);
+    photoB64.push(compressed);
+    const img=document.createElement('img');
+    img.src='data:image/jpeg;base64,'+compressed;
+    img.className='photo-thumb';
+    img.onclick=function(){
+      const idx=Array.from(prev.children).indexOf(img);
+      photoB64.splice(idx,1);
+      img.remove();
+      countEl.textContent=photoB64.length>0?`${photoB64.length} photo(s) — tap to remove`:'';
+    };
+    prev.appendChild(img);
+  }
+  countEl.textContent=`${photoB64.length} photo(s) — tap to remove`;
   e.target.value='';
 });
 
@@ -565,12 +565,6 @@ async function submitReport(){
   btn.disabled=true;
   btn.textContent='⏳ Sending...';
   statusEl.style.display='none';
-
-  // Wait for any pending photo compressions
-  await new Promise(resolve=>{
-    const check=()=>{ pendingCompressions===0?resolve():setTimeout(check,100); };
-    check();
-  });
 
   try{
 
