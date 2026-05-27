@@ -92,7 +92,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .row-green{background:#e6f5e6}
 .row-red{background:#fce8e8}
 .petty-input-row{display:flex;justify-content:space-between;align-items:center;padding:0 16px;background:#fff;border-bottom:1px solid #f0f0f0;min-height:50px}
-.petty-number-input{border:none;background:transparent;font-size:16px;font-weight:700;padding:14px 0;text-align:right;width:130px;outline:none;color:var(--text)}
+.petty-number-input{border:none;background:transparent;font-size:16px;font-weight:700;padding:14px 0;text-align:right;width:130px;outline:none;color:var(--text);transition:background 0.3s}
+.petty-history{padding:8px 16px;background:#f9f9f9;font-size:11px;color:#666;border-bottom:1px solid #f0f0f0;line-height:1.6;display:none}
 
 .photo-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);background:#fff}
 .photo-inner{padding:14px 16px}
@@ -100,7 +101,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .photo-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#f5f5f5;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:#444;cursor:pointer}
 .photo-btn:active{background:#eee}
 .photo-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;position:relative}
+.photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
 .photo-count{font-size:11px;color:#999;margin-top:6px}
 
 .send-section{margin:10px;display:flex;flex-direction:column;gap:10px}
@@ -125,6 +126,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .setup-field input:focus{border-color:var(--notes-blue)}
 .save-btn{width:100%;padding:11px;background:var(--notes-blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
 .save-ok{font-size:12px;color:#1a7a1a;display:none;text-align:center;margin-top:6px;font-weight:600}
+.autofilled{background:#fff8e1 !important}
 </style>
 </head>
 <body>
@@ -223,6 +225,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
     <label class="petty-label">Opening Balance</label>
     <input type="number" min="0" step="0.01" inputmode="decimal" id="petty-opening" class="petty-number-input" placeholder="0.00">
   </div>
+  <div id="petty-history" class="petty-history"></div>
   <div class="petty-summary-row row-gold">
     <span class="petty-label" style="font-weight:700">Expected Remaining</span>
     <span id="petty-expected" class="petty-val">$0.00</span>
@@ -283,7 +286,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.00 — 2026.05.27</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.10 — 2026.05.27</div>
 </div>
 
 <script>
@@ -294,18 +297,19 @@ const SEND_BTN_LABEL = '✉️ Send Report';
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_WIDTH = 1200;
 const JPEG_QUALITY = 0.7;
-const SEND_TIMEOUT_MS = 120000; // 2분
+const SEND_TIMEOUT_MS = 120000;
 const STORE_NAMES = ['Woolworths', 'Coles', 'Fresh Corp', 'Aldi', 'Seoul Mart'];
 const FIXED_STORE_COUNT = STORE_NAMES.length;
+const HISTORY_KEY = 'petty_history';
+const HISTORY_MAX = 3;
+const HISTORY_KEEP = 14;
 
 // ───────── 유틸 ─────────
 const fmt = v => '$' + (parseFloat(v) || 0).toFixed(2);
 const safeNum = v => parseFloat(v) || 0;
-
-// 사진 데이터: {b64, img} 객체 배열로 관리 → 인덱스 동기화 보장
 const photoEntries = [];
 
-// ───────── 이미지 압축 (진짜 압축) ─────────
+// ───────── 이미지 압축 ─────────
 function compressImage(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -376,7 +380,7 @@ function calcAll(){
 
 document.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcAll));
 
-// ───────── 구매 데이터 추출 (인덱스 매핑 수정) ─────────
+// ───────── 구매 데이터 ─────────
 function getStoreName(rowIndex){
   if(rowIndex < FIXED_STORE_COUNT) return STORE_NAMES[rowIndex];
   const stores = document.querySelectorAll('.purch-store');
@@ -405,7 +409,7 @@ function getPurchaseRows(){
   return rows;
 }
 
-// ───────── 사진 처리 (인덱스 안전 버전) ─────────
+// ───────── 사진 처리 ─────────
 document.getElementById('photo-input').addEventListener('change', async e => {
   const files = Array.from(e.target.files);
   const remaining = MAX_PHOTOS - photoEntries.length;
@@ -471,6 +475,75 @@ function loadSettings(){
   document.getElementById('to-email').value = localStorage.getItem('to-email') || DEFAULT_TO;
 }
 loadSettings();
+
+// ───────── Petty Cash 히스토리 ─────────
+function getHistoryLog(){
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  } catch(e) { return []; }
+}
+
+function savePettyHistory(date, opening, actual, spent){
+  if(!date) return;
+  try {
+    const log = getHistoryLog();
+    const filtered = log.filter(e => e.date !== date);
+    filtered.unshift({
+      date: date,
+      opening: safeNum(opening),
+      actual: safeNum(actual),
+      spent: safeNum(spent)
+    });
+    // 날짜 내림차순 정렬 후 보관
+    filtered.sort((a, b) => b.date.localeCompare(a.date));
+    const trimmed = filtered.slice(0, HISTORY_KEEP);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  } catch(e) { console.warn('History save failed:', e); }
+}
+
+function renderPettyHistory(){
+  const el = document.getElementById('petty-history');
+  if(!el) return;
+  const log = getHistoryLog();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const recent = log.filter(e => e.date !== todayStr).slice(0, HISTORY_MAX);
+  if(recent.length === 0){
+    el.style.display = 'none';
+    return;
+  }
+  const parts = recent.map(e => {
+    const d = e.date.slice(5).replace('-','/');
+    return `<b>${d}</b>: Open $${e.opening.toFixed(0)} → End $${e.actual.toFixed(0)}`;
+  });
+  el.innerHTML = '📊 Recent: ' + parts.join(' &nbsp;|&nbsp; ');
+  el.style.display = 'block';
+}
+
+function autofillOpeningFromYesterday(){
+  const openingInput = document.getElementById('petty-opening');
+  if(openingInput.value && safeNum(openingInput.value) > 0) return;
+
+  const log = getHistoryLog();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const lastEntry = log.find(e => e.date !== todayStr);
+  if(!lastEntry) return;
+
+  openingInput.value = lastEntry.actual.toFixed(2);
+  openingInput.classList.add('autofilled');
+  openingInput.title = `Auto-filled from ${lastEntry.date} (editable)`;
+
+  const clearHighlight = () => {
+    openingInput.classList.remove('autofilled');
+    openingInput.removeEventListener('focus', clearHighlight);
+    openingInput.removeEventListener('input', clearHighlight);
+  };
+  openingInput.addEventListener('focus', clearHighlight);
+  openingInput.addEventListener('input', clearHighlight);
+
+  calcAll();
+}
+
+renderPettyHistory();
 
 // ───────── PDF 빌더 ─────────
 function buildPDFElement(){
@@ -617,10 +690,11 @@ async function submitReport(){
     const pettyActual = safeNum(document.getElementById('petty-actual').value);
     const expected = pettyOpen - totalPurch;
     const diff = pettyActual - expected;
+    const sendDate = date || new Date().toISOString().split('T')[0];
 
     const payload = {
       to_email: toEmail,
-      date: date || new Date().toLocaleDateString('en-AU'),
+      date: sendDate,
       staff: staff,
       notes_subtotal: document.getElementById('notes-subtotal').textContent,
       coins_subtotal: document.getElementById('coins-subtotal').textContent,
@@ -656,6 +730,10 @@ async function submitReport(){
     const result = await response.json();
 
     if(result.status === 'success'){
+      // 히스토리 저장 + 표시 갱신
+      savePettyHistory(sendDate, pettyOpen, pettyActual, totalPurch);
+      renderPettyHistory();
+
       showStatus('success', '✅ Report sent successfully!');
       btn.textContent = '✅ Sent — Send Again';
       btn.style.background = '#1a7a1a';
@@ -674,7 +752,7 @@ async function submitReport(){
   }
 }
 
-// ───────── 자동 저장/복원 (안정된 키 방식) ─────────
+// ───────── 자동 저장/복원 ─────────
 const FIELD_CLASSES = ['notes-count','coins-count','purch-amt','purch-store'];
 const SIMPLE_FIELDS = ['opening-float','petty-opening','petty-actual','inp-staff','inp-date'];
 
@@ -715,7 +793,7 @@ function restoreFormData(){
 }
 
 function clearAll(){
-  if(!confirm('Clear all data? This cannot be undone.')) return;
+  if(!confirm('Clear all data? This cannot be undone.\n(History log will be preserved)')) return;
   localStorage.removeItem('cashform');
   document.querySelectorAll('input[type=number]').forEach(i => i.value = '');
   document.querySelectorAll('.purch-store').forEach(i => i.value = '');
@@ -723,12 +801,16 @@ function clearAll(){
   document.getElementById('photo-preview').innerHTML = '';
   document.getElementById('photo-count').textContent = '';
   photoEntries.length = 0;
+  // opening 입력칸 하이라이트 제거
+  document.getElementById('petty-opening').classList.remove('autofilled');
   calcAll();
   const btn = document.getElementById('submit-btn');
   btn.disabled = false;
   btn.textContent = SEND_BTN_LABEL;
   btn.style.background = '';
   document.getElementById('status-msg').style.display = 'none';
+  // Clear 후 다시 어제 잔액 자동채우기
+  autofillOpeningFromYesterday();
 }
 
 // ───────── 초기화 ─────────
@@ -743,6 +825,7 @@ if(lastSaved['inp-date'] && lastSaved['inp-date'] !== todayStr){
   restoreFormData();
 }
 calcAll();
+autofillOpeningFromYesterday();
 </script>
 </body>
 </html>
