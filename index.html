@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Daily Cash Count Sheet</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{
   --blue:#1a2a4a;
@@ -57,7 +58,6 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .subtotal-bar.blue-bar{background:#dce8f7;border-top:1px solid #b8d0ed}
 .subtotal-bar.green-bar{background:#d8eed8;border-top:1px solid #aad4aa}
 
-/* REGISTER SUMMARY */
 .drawer-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
 .drawer-top{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;background:var(--blue)}
 .drawer-top-label{font-size:15px;font-weight:700;color:#fff}
@@ -70,7 +70,6 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .actual-label{font-size:14px;font-weight:700}
 .actual-val{font-size:17px;font-weight:700;color:#1a7a1a}
 
-/* PETTY CASH */
 .petty-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
 .purchase-list{background:#fff}
 .purchase-row{display:grid;grid-template-columns:1fr 100px;align-items:center;border-bottom:1px solid #f2f2f2;min-height:52px}
@@ -95,28 +94,28 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .petty-input-row{display:flex;justify-content:space-between;align-items:center;padding:0 16px;background:#fff;border-bottom:1px solid #f0f0f0;min-height:50px}
 .petty-number-input{border:none;background:transparent;font-size:16px;font-weight:700;padding:14px 0;text-align:right;width:130px;outline:none;color:var(--text)}
 
-/* PHOTO */
 .photo-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);background:#fff}
 .photo-inner{padding:14px 16px}
 .photo-title{font-size:13px;font-weight:700;color:#555;margin-bottom:10px}
 .photo-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#f5f5f5;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:#444;cursor:pointer}
 .photo-btn:active{background:#eee}
 .photo-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;position:relative}
 .photo-count{font-size:11px;color:#999;margin-top:6px}
 
-/* SEND */
 .send-section{margin:10px;display:flex;flex-direction:column;gap:10px}
 .btn-send{width:100%;padding:18px;background:var(--blue);color:#fff;border:none;font-size:16px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(26,42,74,0.25)}
 .btn-send:active{transform:scale(0.98)}
-.btn-send:disabled{background:#aaa;box-shadow:none}
+.btn-send:disabled{background:#aaa;box-shadow:none;cursor:not-allowed}
+.btn-pdf{width:100%;padding:13px;background:#fff;color:#555;border:1.5px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-pdf:active{transform:scale(0.98);background:#f5f5f5}
 .btn-clear{width:100%;padding:13px;background:#fff;color:#cc2222;border:2px solid #cc2222;font-size:14px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-clear:active{transform:scale(0.98)}
-.status-msg{padding:14px;text-align:center;font-size:14px;font-weight:600;border-radius:10px;display:none}
+.status-msg{padding:14px;text-align:center;font-size:14px;font-weight:600;border-radius:10px;display:none;word-break:break-word}
 .status-success{background:#d4edda;color:#155724}
 .status-error{background:#f8d7da;color:#721c24}
+.status-info{background:#d1ecf1;color:#0c5460}
 
-/* SETUP */
 .setup-toggle{margin:10px;padding:13px 16px;background:#fff;border-radius:14px;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:14px;font-weight:600;color:#555;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 .setup-box{margin:0 10px 10px;padding:16px;background:#f0f4fa;border-radius:0 0 14px 14px;border:1.5px solid var(--notes-blue);border-top:none;display:none}
 .setup-box.open{display:block}
@@ -216,7 +215,6 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
     <div class="purchase-row"><input type="text" class="store-input purch-store" placeholder="Other store"><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
   </div>
 
-  <!-- PETTY CASH SUMMARY -->
   <div class="petty-summary-row row-purple-light">
     <span class="petty-label">Total Spent Today</span>
     <span id="total-purchases" class="petty-val">$0.00</span>
@@ -285,190 +283,238 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v1.23 — 2026.05.26</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.00 — 2026.05.27</div>
 </div>
 
 <script>
-const fmt = v => '$' + parseFloat(v||0).toFixed(2);
-const photoB64 = [];
-let pendingCompressions = 0;
+// ───────── 설정 상수 ─────────
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyfs0VblWyScK7GLmpDkbobAQ7kClGxSzX2JXpnHnKVEUrH43hcGWdWbLSBBFCMSb79/exec';
+const DEFAULT_TO = 'umihornsby@gmail.com';
+const SEND_BTN_LABEL = '✉️ Send Report';
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_WIDTH = 1200;
+const JPEG_QUALITY = 0.7;
+const SEND_TIMEOUT_MS = 120000; // 2분
+const STORE_NAMES = ['Woolworths', 'Coles', 'Fresh Corp', 'Aldi', 'Seoul Mart'];
+const FIXED_STORE_COUNT = STORE_NAMES.length;
 
-function compressImage(file) {
-  return new Promise((resolve) => {
+// ───────── 유틸 ─────────
+const fmt = v => '$' + (parseFloat(v) || 0).toFixed(2);
+const safeNum = v => parseFloat(v) || 0;
+
+// 사진 데이터: {b64, img} 객체 배열로 관리 → 인덱스 동기화 보장
+const photoEntries = [];
+
+// ───────── 이미지 압축 (진짜 압축) ─────────
+function compressImage(file){
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = ev => {
-      resolve(ev.target.result.split(',')[1]);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, MAX_PHOTO_WIDTH / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+          resolve(dataUrl.split(',')[1]);
+        } catch(err) { reject(err); }
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = ev.target.result;
     };
+    reader.onerror = () => reject(new Error('File read failed'));
     reader.readAsDataURL(file);
   });
 }
 
+// ───────── 합산 계산 ─────────
 function calcAll(){
-  let notes=0;
-  document.querySelectorAll('.notes-count').forEach((inp,i)=>{
-    const v=parseFloat(inp.value||0)*parseFloat(inp.dataset.val);
-    document.querySelectorAll('.notes-sub')[i].textContent=fmt(v);
-    notes+=v;
+  let notes = 0;
+  const notesInputs = document.querySelectorAll('.notes-count');
+  const notesSubs = document.querySelectorAll('.notes-sub');
+  notesInputs.forEach((inp, i) => {
+    const v = safeNum(inp.value) * safeNum(inp.dataset.val);
+    notesSubs[i].textContent = fmt(v);
+    notes += v;
   });
-  document.getElementById('notes-subtotal').textContent=fmt(notes);
+  document.getElementById('notes-subtotal').textContent = fmt(notes);
 
-  let coins=0;
-  document.querySelectorAll('.coins-count').forEach((inp,i)=>{
-    const v=parseFloat(inp.value||0)*parseFloat(inp.dataset.val);
-    document.querySelectorAll('.coins-sub')[i].textContent=fmt(v);
-    coins+=v;
+  let coins = 0;
+  const coinsInputs = document.querySelectorAll('.coins-count');
+  const coinsSubs = document.querySelectorAll('.coins-sub');
+  coinsInputs.forEach((inp, i) => {
+    const v = safeNum(inp.value) * safeNum(inp.dataset.val);
+    coinsSubs[i].textContent = fmt(v);
+    coins += v;
   });
-  document.getElementById('coins-subtotal').textContent=fmt(coins);
+  document.getElementById('coins-subtotal').textContent = fmt(coins);
 
-  const total=notes+coins;
-  const openFloat=parseFloat(document.getElementById('opening-float').value||0);
-  document.getElementById('register-total').textContent=fmt(total);
-  document.getElementById('actual-sales').textContent=fmt(total-openFloat);
+  const total = notes + coins;
+  const openFloat = safeNum(document.getElementById('opening-float').value);
+  document.getElementById('register-total').textContent = fmt(total);
+  document.getElementById('actual-sales').textContent = fmt(total - openFloat);
 
-  let purch=0;
-  document.querySelectorAll('.purch-amt').forEach(inp=>{ purch+=parseFloat(inp.value||0); });
-  document.getElementById('total-purchases').textContent=fmt(purch);
+  let purch = 0;
+  document.querySelectorAll('.purch-amt').forEach(inp => { purch += safeNum(inp.value); });
+  document.getElementById('total-purchases').textContent = fmt(purch);
 
-  const pettyOpen=parseFloat(document.getElementById('petty-opening').value||0);
-  const expected=pettyOpen-purch;
-  document.getElementById('petty-expected').textContent=fmt(expected);
+  const pettyOpen = safeNum(document.getElementById('petty-opening').value);
+  const expected = pettyOpen - purch;
+  document.getElementById('petty-expected').textContent = fmt(expected);
 
-  const pettyActual=parseFloat(document.getElementById('petty-actual').value||0);
-  const diff=pettyActual-expected;
-  const diffEl=document.getElementById('petty-diff');
-  const diffRow=document.getElementById('petty-diff-row');
-  diffEl.textContent=fmt(diff);
-  diffRow.className='petty-summary-row '+(diff<0?'row-red':diff>0?'row-green':'');
+  const pettyActual = safeNum(document.getElementById('petty-actual').value);
+  const diff = pettyActual - expected;
+  const diffEl = document.getElementById('petty-diff');
+  const diffRow = document.getElementById('petty-diff-row');
+  diffEl.textContent = fmt(diff);
+  diffRow.className = 'petty-summary-row ' + (diff < 0 ? 'row-red' : diff > 0 ? 'row-green' : '');
 }
 
-document.querySelectorAll('input[type=number]').forEach(i=>i.addEventListener('input',calcAll));
+document.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcAll));
 
-// Photos
-document.getElementById('photo-input').addEventListener('change', async e=>{
-  const files=Array.from(e.target.files);
-  const remaining=5-photoB64.length;
-  if(remaining<=0){ alert('Maximum 5 photos allowed'); return; }
-  const toAdd=files.slice(0,remaining);
-  const prev=document.getElementById('photo-preview');
-  const countEl=document.getElementById('photo-count');
-  countEl.textContent='Compressing...';
-  for(const f of toAdd){
-    const compressed=await compressImage(f);
-    photoB64.push(compressed);
-    const img=document.createElement('img');
-    img.src='data:image/jpeg;base64,'+compressed;
-    img.className='photo-thumb';
-    img.onclick=function(){
-      const idx=Array.from(prev.children).indexOf(img);
-      photoB64.splice(idx,1);
-      img.remove();
-      countEl.textContent=photoB64.length>0?`${photoB64.length} photo(s) — tap to remove`:'';
-    };
-    prev.appendChild(img);
-  }
-  countEl.textContent=`${photoB64.length} photo(s) — tap to remove`;
-  e.target.value='';
-});
-
-function toggleSetup(){
-  const box=document.getElementById('setup-box');
-  const arrow=document.getElementById('setup-arrow');
-  box.classList.toggle('open');
-  arrow.textContent=box.classList.contains('open')?'▲':'▼';
+// ───────── 구매 데이터 추출 (인덱스 매핑 수정) ─────────
+function getStoreName(rowIndex){
+  if(rowIndex < FIXED_STORE_COUNT) return STORE_NAMES[rowIndex];
+  const stores = document.querySelectorAll('.purch-store');
+  const otherIdx = rowIndex - FIXED_STORE_COUNT;
+  const customName = stores[otherIdx] && stores[otherIdx].value.trim();
+  return customName || 'Other';
 }
-
-function saveSettings(){
-  localStorage.setItem('gas-url',document.getElementById('gas-url').value.trim());
-  localStorage.setItem('to-email',document.getElementById('to-email').value.trim());
-  const m=document.getElementById('save-ok');
-  m.style.display='block';
-  setTimeout(()=>m.style.display='none',2000);
-}
-
-const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbzUTe-iKfCjr8kRqqktpjcg6jitM7NtsQPqUgiKlkJbNukBb7t5r7ELzUddrhxI2N20/exec';
-const DEFAULT_TO='umihornsby@gmail.com';
-function loadSettings(){
-  document.getElementById('gas-url').value=localStorage.getItem('gas-url')||DEFAULT_GAS_URL;
-  document.getElementById('to-email').value=localStorage.getItem('to-email')||DEFAULT_TO;
-}
-loadSettings();
 
 function getPurchaseLines(){
-  const storeNames=['Woolworths','Coles','Fresh Corp','Aldi','Seoul Mart'];
-  const amts=document.querySelectorAll('.purch-amt');
-  const stores=document.querySelectorAll('.purch-store');
-  let lines=''; let si=0;
-  amts.forEach((inp,i)=>{
-    const amt=parseFloat(inp.value||0);
-    if(amt>0){
-      const name=i<5?storeNames[i]:(stores[si]?stores[si++].value||'Other':'Other');
-      lines+=`${name}: $${amt.toFixed(2)}  `;
-    }
+  const amts = document.querySelectorAll('.purch-amt');
+  let lines = '';
+  amts.forEach((inp, i) => {
+    const amt = safeNum(inp.value);
+    if(amt > 0) lines += `${getStoreName(i)}: $${amt.toFixed(2)}  `;
   });
-  return lines||'None';
+  return lines || 'None';
 }
 
 function getPurchaseRows(){
-  const storeNames=['Woolworths','Coles','Fresh Corp','Aldi','Seoul Mart'];
-  const amts=document.querySelectorAll('.purch-amt');
-  const stores=document.querySelectorAll('.purch-store');
-  let rows=[]; let si=0;
-  amts.forEach((inp,i)=>{
-    const amt=parseFloat(inp.value||0);
-    if(amt>0){
-      const name=i<5?storeNames[i]:(stores[si]?stores[si++].value||'Other':'Other');
-      rows.push({store:name, amount:'$'+amt.toFixed(2)});
-    }
+  const amts = document.querySelectorAll('.purch-amt');
+  const rows = [];
+  amts.forEach((inp, i) => {
+    const amt = safeNum(inp.value);
+    if(amt > 0) rows.push({ store: getStoreName(i), amount: '$' + amt.toFixed(2) });
   });
   return rows;
 }
 
-function buildPDFElement(){
-  const date=document.getElementById('inp-date').value||new Date().toISOString().split('T')[0];
-  const staff=document.getElementById('inp-staff').value||'—';
-  const storeNames=['Woolworths','Coles','Fresh Corp','Aldi','Seoul Mart'];
-  const amts=document.querySelectorAll('.purch-amt');
-  const stores=document.querySelectorAll('.purch-store');
+// ───────── 사진 처리 (인덱스 안전 버전) ─────────
+document.getElementById('photo-input').addEventListener('change', async e => {
+  const files = Array.from(e.target.files);
+  const remaining = MAX_PHOTOS - photoEntries.length;
+  if(remaining <= 0){ alert(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
+  const toAdd = files.slice(0, remaining);
+  const prev = document.getElementById('photo-preview');
+  const countEl = document.getElementById('photo-count');
+  countEl.textContent = 'Compressing...';
 
-  let notesRows='';
-  const nL=['$100','$50','$20','$10','$5'], nV=[100,50,20,10,5];
-  document.querySelectorAll('.notes-count').forEach((inp,i)=>{
-    const c=parseInt(inp.value||0);
-    if(c>0) notesRows+=`<tr><td>${nL[i]}</td><td style="text-align:right">${c}</td><td style="text-align:right">$${(c*nV[i]).toFixed(2)}</td></tr>`;
-  });
+  for(const f of toAdd){
+    try {
+      const compressed = await compressImage(f);
+      const img = document.createElement('img');
+      img.src = 'data:image/jpeg;base64,' + compressed;
+      img.className = 'photo-thumb';
+      img.title = 'Tap to remove';
 
-  let coinsRows='';
-  const cL=['$2','$1','50c','20c','10c','5c'], cV=[2,1,0.5,0.2,0.1,0.05];
-  document.querySelectorAll('.coins-count').forEach((inp,i)=>{
-    const c=parseInt(inp.value||0);
-    if(c>0) coinsRows+=`<tr><td>${cL[i]}</td><td style="text-align:right">${c}</td><td style="text-align:right">$${(c*cV[i]).toFixed(2)}</td></tr>`;
-  });
+      const entry = { b64: compressed, img: img };
+      photoEntries.push(entry);
 
-  let purchRows=''; let si=0;
-  amts.forEach((inp,i)=>{
-    const amt=parseFloat(inp.value||0);
-    if(amt>0){
-      const name=i<5?storeNames[i]:(stores[si]?stores[si++].value||'Other':'Other');
-      purchRows+=`<tr><td>${name}</td><td style="text-align:right">$${amt.toFixed(2)}</td></tr>`;
+      img.onclick = function(){
+        const idx = photoEntries.indexOf(entry);
+        if(idx >= 0){
+          photoEntries.splice(idx, 1);
+          img.remove();
+          updatePhotoCount();
+        }
+      };
+      prev.appendChild(img);
+    } catch(err) {
+      console.error('Photo compress failed:', err);
     }
+  }
+  updatePhotoCount();
+  e.target.value = '';
+});
+
+function updatePhotoCount(){
+  const countEl = document.getElementById('photo-count');
+  countEl.textContent = photoEntries.length > 0
+    ? `${photoEntries.length} photo(s) — tap to remove`
+    : '';
+}
+
+// ───────── 설정 패널 ─────────
+function toggleSetup(){
+  const box = document.getElementById('setup-box');
+  const arrow = document.getElementById('setup-arrow');
+  box.classList.toggle('open');
+  arrow.textContent = box.classList.contains('open') ? '▲' : '▼';
+}
+
+function saveSettings(){
+  localStorage.setItem('gas-url', document.getElementById('gas-url').value.trim());
+  localStorage.setItem('to-email', document.getElementById('to-email').value.trim());
+  const m = document.getElementById('save-ok');
+  m.style.display = 'block';
+  setTimeout(() => m.style.display = 'none', 2000);
+}
+
+function loadSettings(){
+  document.getElementById('gas-url').value = localStorage.getItem('gas-url') || DEFAULT_GAS_URL;
+  document.getElementById('to-email').value = localStorage.getItem('to-email') || DEFAULT_TO;
+}
+loadSettings();
+
+// ───────── PDF 빌더 ─────────
+function buildPDFElement(){
+  const date = document.getElementById('inp-date').value || new Date().toISOString().split('T')[0];
+  const staff = document.getElementById('inp-staff').value || '—';
+
+  let notesRows = '';
+  const nL = ['$100','$50','$20','$10','$5'], nV = [100,50,20,10,5];
+  document.querySelectorAll('.notes-count').forEach((inp, i) => {
+    const c = parseInt(inp.value || 0);
+    if(c > 0) notesRows += `<tr><td>${nL[i]}</td><td style="text-align:right">${c}</td><td style="text-align:right">$${(c*nV[i]).toFixed(2)}</td></tr>`;
   });
 
-  const pettyOpen=parseFloat(document.getElementById('petty-opening').value||0);
-  const totalPurch=parseFloat(document.getElementById('total-purchases').textContent.replace('$',''));
-  const expected=pettyOpen-totalPurch;
-  const pettyActual=parseFloat(document.getElementById('petty-actual').value||0);
-  const diff=pettyActual-expected;
+  let coinsRows = '';
+  const cL = ['$2','$1','50c','20c','10c','5c'], cV = [2,1,0.5,0.2,0.1,0.05];
+  document.querySelectorAll('.coins-count').forEach((inp, i) => {
+    const c = parseInt(inp.value || 0);
+    if(c > 0) coinsRows += `<tr><td>${cL[i]}</td><td style="text-align:right">${c}</td><td style="text-align:right">$${(c*cV[i]).toFixed(2)}</td></tr>`;
+  });
 
-  let photoHtml='';
-  if(photoB64.length>0){
-    photoHtml='<div style="margin-top:16px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">Receipts</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
-    photoB64.forEach(b64=>{ photoHtml+=`<img src="data:image/jpeg;base64,${b64}" style="width:120px;height:120px;object-fit:cover;border-radius:6px;border:1px solid #ddd">`; });
-    photoHtml+='</div></div>';
+  let purchRows = '';
+  document.querySelectorAll('.purch-amt').forEach((inp, i) => {
+    const amt = safeNum(inp.value);
+    if(amt > 0) purchRows += `<tr><td>${getStoreName(i)}</td><td style="text-align:right">$${amt.toFixed(2)}</td></tr>`;
+  });
+
+  const pettyOpen = safeNum(document.getElementById('petty-opening').value);
+  const totalPurch = safeNum(document.getElementById('total-purchases').textContent.replace('$',''));
+  const expected = pettyOpen - totalPurch;
+  const pettyActual = safeNum(document.getElementById('petty-actual').value);
+  const diff = pettyActual - expected;
+
+  let photoHtml = '';
+  if(photoEntries.length > 0){
+    photoHtml = '<div style="margin-top:16px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">Receipts</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+    photoEntries.forEach(e => {
+      photoHtml += `<img src="data:image/jpeg;base64,${e.b64}" style="width:120px;height:120px;object-fit:cover;border-radius:6px;border:1px solid #ddd">`;
+    });
+    photoHtml += '</div></div>';
   }
 
-  const el=document.createElement('div');
-  el.style.cssText='font-family:Arial,sans-serif;padding:24px;color:#222;width:100%';
-  el.innerHTML=`
+  const el = document.createElement('div');
+  el.style.cssText = 'font-family:Arial,sans-serif;padding:24px;color:#222;width:100%';
+  el.innerHTML = `
     <div style="background:#1a2a4a;color:#fff;padding:14px;text-align:center;font-size:18px;font-weight:700;margin-bottom:12px">DAILY CASH COUNT SHEET</div>
     <div style="display:flex;gap:24px;margin-bottom:14px;font-size:13px"><div><b>Date:</b> ${date}</div><div><b>Staff:</b> ${staff}</div></div>
 
@@ -477,7 +523,7 @@ function buildPDFElement(){
         <div style="background:#3b72b8;color:#fff;padding:7px 10px;font-weight:700;font-size:13px">NOTES</div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <tr style="background:#e8edf3"><th style="padding:5px 8px;text-align:left">Value</th><th style="padding:5px 8px;text-align:right">Count</th><th style="padding:5px 8px;text-align:right">Subtotal</th></tr>
-          ${notesRows||'<tr><td colspan="3" style="padding:6px 8px;color:#999">None</td></tr>'}
+          ${notesRows || '<tr><td colspan="3" style="padding:6px 8px;color:#999">None</td></tr>'}
           <tr style="background:#dce8f7;font-weight:700"><td colspan="2" style="padding:6px 8px">Notes Subtotal</td><td style="padding:6px 8px;text-align:right">${document.getElementById('notes-subtotal').textContent}</td></tr>
         </table>
       </div>
@@ -485,7 +531,7 @@ function buildPDFElement(){
         <div style="background:#2e6e1e;color:#fff;padding:7px 10px;font-weight:700;font-size:13px">COINS</div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <tr style="background:#d8eed8"><th style="padding:5px 8px;text-align:left">Value</th><th style="padding:5px 8px;text-align:right">Count</th><th style="padding:5px 8px;text-align:right">Subtotal</th></tr>
-          ${coinsRows||'<tr><td colspan="3" style="padding:6px 8px;color:#999">None</td></tr>'}
+          ${coinsRows || '<tr><td colspan="3" style="padding:6px 8px;color:#999">None</td></tr>'}
           <tr style="background:#d8eed8;font-weight:700"><td colspan="2" style="padding:6px 8px">Coins Subtotal</td><td style="padding:6px 8px;text-align:right">${document.getElementById('coins-subtotal').textContent}</td></tr>
         </table>
       </div>
@@ -493,14 +539,14 @@ function buildPDFElement(){
 
     <table style="width:55%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
       <tr style="background:#1a2a4a"><td style="padding:9px 12px;color:#fff;font-weight:700">Total Cash in Register</td><td style="padding:9px 12px;background:#f5c518;text-align:right;font-weight:700">${document.getElementById('register-total').textContent}</td></tr>
-      <tr style="border-bottom:1px solid #eee"><td style="padding:7px 12px">Less: Opening Float</td><td style="padding:7px 12px;text-align:right">$${parseFloat(document.getElementById('opening-float').value||0).toFixed(2)}</td></tr>
+      <tr style="border-bottom:1px solid #eee"><td style="padding:7px 12px">Less: Opening Float</td><td style="padding:7px 12px;text-align:right">$${safeNum(document.getElementById('opening-float').value).toFixed(2)}</td></tr>
       <tr style="background:#e6f5e6"><td style="padding:9px 12px;font-weight:700">Actual Cash Sales</td><td style="padding:9px 12px;text-align:right;font-weight:700;color:#1a7a1a">${document.getElementById('actual-sales').textContent}</td></tr>
     </table>
 
     <div style="background:#6b39b2;color:#fff;padding:7px 10px;font-weight:700;font-size:13px">SHOPPING PETTY CASH</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">
       <tr style="background:#ede8f5"><th style="padding:5px 8px;text-align:left">Store</th><th style="padding:5px 8px;text-align:right">Amount</th></tr>
-      ${purchRows||'<tr><td colspan="2" style="padding:6px 8px;color:#999">None</td></tr>'}
+      ${purchRows || '<tr><td colspan="2" style="padding:6px 8px;color:#999">None</td></tr>'}
     </table>
     <table style="width:55%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
       <tr style="background:#ede8f5;font-weight:700"><td style="padding:6px 10px">Total Spent Today</td><td style="padding:6px 10px;text-align:right">${document.getElementById('total-purchases').textContent}</td></tr>
@@ -520,171 +566,183 @@ function buildPDFElement(){
 }
 
 function downloadPDF(){
-  const date=document.getElementById('inp-date').value||new Date().toISOString().split('T')[0];
-  const staff=document.getElementById('inp-staff').value||'staff';
-  const el=buildPDFElement();
+  if(typeof html2pdf === 'undefined'){
+    alert('PDF library not loaded. Check internet connection and reload.');
+    return;
+  }
+  const date = document.getElementById('inp-date').value || new Date().toISOString().split('T')[0];
+  const staff = document.getElementById('inp-staff').value || 'staff';
+  const el = buildPDFElement();
   document.body.appendChild(el);
   html2pdf().set({
-    margin:0.4,filename:`CashReport_${date}_${staff}.pdf`,
-    image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,useCORS:true,logging:false},
-    jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
-  }).from(el).save().then(()=>document.body.removeChild(el));
+    margin: 0.4, filename: `CashReport_${date}_${staff}.pdf`,
+    image: {type:'jpeg', quality:0.98},
+    html2canvas: {scale:2, useCORS:true, logging:false},
+    jsPDF: {unit:'in', format:'a4', orientation:'portrait'}
+  }).from(el).save().then(() => document.body.removeChild(el));
 }
 
-async function generatePDFBase64(){
-  const el=buildPDFElement();
-  el.style.cssText+='position:absolute;left:-9999px;width:750px';
-  document.body.appendChild(el);
-  const pdf=await html2pdf().set({
-    margin:0.4,image:{type:'jpeg',quality:0.95},
-    html2canvas:{scale:1.5,useCORS:true,logging:false},
-    jsPDF:{unit:'in',format:'a4',orientation:'portrait'}
-  }).from(el).outputPdf('datauristring');
-  document.body.removeChild(el);
-  return pdf.split(',')[1];
+// ───────── 리포트 전송 ─────────
+function showStatus(type, message){
+  const statusEl = document.getElementById('status-msg');
+  statusEl.className = 'status-msg status-' + type;
+  statusEl.textContent = message;
+  statusEl.style.display = 'block';
 }
 
 async function submitReport(){
-  const gasUrl=document.getElementById('gas-url').value.trim();
-  const toEmail=document.getElementById('to-email').value.trim()||'umihornsby@gmail.com';
-  const staff=document.getElementById('inp-staff').value.trim();
-  const date=document.getElementById('inp-date').value;
-  const statusEl=document.getElementById('status-msg');
-  const btn=document.getElementById('submit-btn');
+  const gasUrl = document.getElementById('gas-url').value.trim();
+  const toEmail = document.getElementById('to-email').value.trim() || DEFAULT_TO;
+  const staff = document.getElementById('inp-staff').value.trim();
+  const date = document.getElementById('inp-date').value;
+  const btn = document.getElementById('submit-btn');
 
   if(!gasUrl){
-    statusEl.className='status-msg status-error';
-    statusEl.textContent='Please enter Google Script URL in Email Settings';
-    statusEl.style.display='block';
+    showStatus('error', 'Please enter Google Script URL in Email Settings');
     if(!document.getElementById('setup-box').classList.contains('open')) toggleSetup();
     return;
   }
   if(!staff){
-    statusEl.className='status-msg status-error';
-    statusEl.textContent='Please enter staff name';
-    statusEl.style.display='block';
+    showStatus('error', 'Please enter staff name');
     return;
   }
 
-  btn.disabled=true;
-  btn.textContent='⏳ Sending...';
-  statusEl.style.display='none';
+  btn.disabled = true;
+  btn.textContent = '⏳ Sending...';
+  document.getElementById('status-msg').style.display = 'none';
 
-  console.log('Photos count:', photoB64.length);
-  if(photoB64.length>0){
-    console.log('First photo length:', photoB64[0].length);
-  }
+  try {
+    const pettyOpen = safeNum(document.getElementById('petty-opening').value);
+    const totalPurch = safeNum(document.getElementById('total-purchases').textContent.replace('$',''));
+    const pettyActual = safeNum(document.getElementById('petty-actual').value);
+    const expected = pettyOpen - totalPurch;
+    const diff = pettyActual - expected;
 
-  try{
-
-    const pettyOpen=parseFloat(document.getElementById('petty-opening').value||0);
-    const totalPurch=parseFloat(document.getElementById('total-purchases').textContent.replace('$',''));
-    const pettyActual=parseFloat(document.getElementById('petty-actual').value||0);
-    const expected=pettyOpen-totalPurch;
-    const diff=pettyActual-expected;
-
-    const payload={
+    const payload = {
       to_email: toEmail,
-      date: date||new Date().toLocaleDateString('en-AU'),
+      date: date || new Date().toLocaleDateString('en-AU'),
       staff: staff,
       notes_subtotal: document.getElementById('notes-subtotal').textContent,
       coins_subtotal: document.getElementById('coins-subtotal').textContent,
       register_total: document.getElementById('register-total').textContent,
-      opening_float: '$'+parseFloat(document.getElementById('opening-float').value||0).toFixed(2),
+      opening_float: '$' + safeNum(document.getElementById('opening-float').value).toFixed(2),
       actual_sales: document.getElementById('actual-sales').textContent,
       purchases_detail: getPurchaseLines(),
       purchases_rows: getPurchaseRows(),
       total_purchases: document.getElementById('total-purchases').textContent,
-      petty_opening: '$'+pettyOpen.toFixed(2),
-      petty_expected: '$'+expected.toFixed(2),
-      petty_actual: '$'+pettyActual.toFixed(2),
-      petty_diff: '$'+diff.toFixed(2),
-      photos: photoB64,
+      petty_opening: '$' + pettyOpen.toFixed(2),
+      petty_expected: '$' + expected.toFixed(2),
+      petty_actual: '$' + pettyActual.toFixed(2),
+      petty_diff: '$' + diff.toFixed(2),
+      photos: photoEntries.map(e => e.b64)
     };
 
-    const response=await fetch(gasUrl,{method:'POST',body:JSON.stringify(payload)});
-    const result=await response.json();
+    const payloadStr = JSON.stringify(payload);
+    console.log('Sending: photos=' + photoEntries.length + ', size=' + (payloadStr.length/1024).toFixed(1) + ' KB');
 
-    if(result.status==='success'){
-      statusEl.className='status-msg status-success';
-      statusEl.textContent='✅ Report sent successfully!';
-      statusEl.style.display='block';
-      btn.textContent='✅ Sent — Send Again';
-      btn.style.background='#1a7a1a';
-      btn.disabled=false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+
+    const response = await fetch(gasUrl, {
+      method: 'POST',
+      redirect: 'follow',
+      body: payloadStr,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if(!response.ok) throw new Error('HTTP ' + response.status);
+
+    const result = await response.json();
+
+    if(result.status === 'success'){
+      showStatus('success', '✅ Report sent successfully!');
+      btn.textContent = '✅ Sent — Send Again';
+      btn.style.background = '#1a7a1a';
+      btn.disabled = false;
     } else {
-      throw new Error(result.message||'Server error');
+      throw new Error(result.message || 'Server error');
     }
-  }catch(err){
+  } catch(err) {
     console.error(err);
-    statusEl.className='status-msg status-error';
-    statusEl.textContent='Failed: '+(err.message||'Please try again');
-    statusEl.style.display='block';
-    btn.disabled=false;
-    btn.style.background='';
-    btn.textContent='✉️ Send Report (with PDF)';
+    let msg = err.message || 'Please try again';
+    if(err.name === 'AbortError') msg = 'Timeout — request took too long';
+    showStatus('error', 'Failed: ' + msg);
+    btn.disabled = false;
+    btn.style.background = '';
+    btn.textContent = SEND_BTN_LABEL;
   }
 }
 
-// Auto-save inputs to localStorage
+// ───────── 자동 저장/복원 (안정된 키 방식) ─────────
+const FIELD_CLASSES = ['notes-count','coins-count','purch-amt','purch-store'];
+const SIMPLE_FIELDS = ['opening-float','petty-opening','petty-actual','inp-staff','inp-date'];
+
 function saveFormData(){
-  const data={};
-  document.querySelectorAll('.notes-count,.coins-count,.purch-amt,.purch-store').forEach((el,i)=>{
-    data['inp_'+el.className.split(' ')[0]+'_'+i]=el.value;
+  const data = {};
+  FIELD_CLASSES.forEach(cls => {
+    document.querySelectorAll('.' + cls).forEach((el, i) => {
+      data[cls + '_' + i] = el.value;
+    });
   });
-  data['opening-float']=document.getElementById('opening-float').value;
-  data['petty-opening']=document.getElementById('petty-opening').value;
-  data['petty-actual']=document.getElementById('petty-actual').value;
-  data['inp-staff']=document.getElementById('inp-staff').value;
-  data['inp-date']=document.getElementById('inp-date').value;
-  localStorage.setItem('cashform',JSON.stringify(data));
+  SIMPLE_FIELDS.forEach(id => {
+    data[id] = document.getElementById(id).value;
+  });
+  localStorage.setItem('cashform', JSON.stringify(data));
 }
 
 function restoreFormData(){
-  try{
-    const data=JSON.parse(localStorage.getItem('cashform')||'{}');
-    const saved=data['inp-date'];
-    const today=new Date().toISOString().split('T')[0];
-    // Only restore if same day
-    if(saved!==today) return;
-    document.querySelectorAll('.notes-count,.coins-count,.purch-amt,.purch-store').forEach((el,i)=>{
-      const v=data['inp_'+el.className.split(' ')[0]+'_'+i];
-      if(v) el.value=v;
+  try {
+    const data = JSON.parse(localStorage.getItem('cashform') || '{}');
+    const saved = data['inp-date'];
+    const today = new Date().toISOString().split('T')[0];
+    if(saved !== today) return;
+
+    FIELD_CLASSES.forEach(cls => {
+      document.querySelectorAll('.' + cls).forEach((el, i) => {
+        const v = data[cls + '_' + i];
+        if(v) el.value = v;
+      });
     });
-    ['opening-float','petty-opening','petty-actual','inp-staff'].forEach(id=>{
-      const v=data[id];
-      if(v) document.getElementById(id).value=v;
+    SIMPLE_FIELDS.forEach(id => {
+      const v = data[id];
+      if(v && id !== 'inp-date') document.getElementById(id).value = v;
     });
     calcAll();
-  }catch(e){}
+  } catch(e) {
+    console.warn('Restore failed:', e);
+  }
 }
 
 function clearAll(){
   if(!confirm('Clear all data? This cannot be undone.')) return;
   localStorage.removeItem('cashform');
-  document.querySelectorAll('input[type=number]').forEach(i=>i.value='');
-  document.getElementById('inp-staff').value='';
-  document.getElementById('photo-preview').innerHTML='';
-  document.getElementById('photo-count').textContent='';
-  photoB64.length=0;
+  document.querySelectorAll('input[type=number]').forEach(i => i.value = '');
+  document.querySelectorAll('.purch-store').forEach(i => i.value = '');
+  document.getElementById('inp-staff').value = '';
+  document.getElementById('photo-preview').innerHTML = '';
+  document.getElementById('photo-count').textContent = '';
+  photoEntries.length = 0;
   calcAll();
-  const btn=document.getElementById('submit-btn');
-  btn.disabled=false;
-  btn.textContent='✉️ Send Report';
-  btn.style.background='';
-  document.getElementById('status-msg').style.display='none';
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = false;
+  btn.textContent = SEND_BTN_LABEL;
+  btn.style.background = '';
+  document.getElementById('status-msg').style.display = 'none';
 }
 
-document.querySelectorAll('input').forEach(i=>i.addEventListener('input',saveFormData));
-const today=new Date().toISOString().split('T')[0];
-document.getElementById('inp-date').value=today;
-const lastDate=JSON.parse(localStorage.getItem('cashform')||'{}')['inp-date'];
-if(lastDate && lastDate!==today){
+// ───────── 초기화 ─────────
+document.querySelectorAll('input').forEach(i => i.addEventListener('input', saveFormData));
+
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('inp-date').value = todayStr;
+const lastSaved = JSON.parse(localStorage.getItem('cashform') || '{}');
+if(lastSaved['inp-date'] && lastSaved['inp-date'] !== todayStr){
   localStorage.removeItem('cashform');
 } else {
   restoreFormData();
 }
+calcAll();
 </script>
 </body>
 </html>
