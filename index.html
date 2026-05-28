@@ -286,7 +286,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.10 — 2026.05.27</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.11 — 2026.05.29</div>
 </div>
 
 <script>
@@ -308,6 +308,15 @@ const HISTORY_KEEP = 14;
 const fmt = v => '$' + (parseFloat(v) || 0).toFixed(2);
 const safeNum = v => parseFloat(v) || 0;
 const photoEntries = [];
+
+// 로컬 시간 기준 YYYY-MM-DD (타임존 안전)
+function getLocalDateStr(d){
+  const dt = d || new Date();
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 // ───────── 이미지 압축 ─────────
 function compressImage(file){
@@ -494,7 +503,6 @@ function savePettyHistory(date, opening, actual, spent){
       actual: safeNum(actual),
       spent: safeNum(spent)
     });
-    // 날짜 내림차순 정렬 후 보관
     filtered.sort((a, b) => b.date.localeCompare(a.date));
     const trimmed = filtered.slice(0, HISTORY_KEEP);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
@@ -505,7 +513,7 @@ function renderPettyHistory(){
   const el = document.getElementById('petty-history');
   if(!el) return;
   const log = getHistoryLog();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
   const recent = log.filter(e => e.date !== todayStr).slice(0, HISTORY_MAX);
   if(recent.length === 0){
     el.style.display = 'none';
@@ -524,7 +532,7 @@ function autofillOpeningFromYesterday(){
   if(openingInput.value && safeNum(openingInput.value) > 0) return;
 
   const log = getHistoryLog();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
   const lastEntry = log.find(e => e.date !== todayStr);
   if(!lastEntry) return;
 
@@ -547,7 +555,7 @@ renderPettyHistory();
 
 // ───────── PDF 빌더 ─────────
 function buildPDFElement(){
-  const date = document.getElementById('inp-date').value || new Date().toISOString().split('T')[0];
+  const date = document.getElementById('inp-date').value || getLocalDateStr();
   const staff = document.getElementById('inp-staff').value || '—';
 
   let notesRows = '';
@@ -643,7 +651,7 @@ function downloadPDF(){
     alert('PDF library not loaded. Check internet connection and reload.');
     return;
   }
-  const date = document.getElementById('inp-date').value || new Date().toISOString().split('T')[0];
+  const date = document.getElementById('inp-date').value || getLocalDateStr();
   const staff = document.getElementById('inp-staff').value || 'staff';
   const el = buildPDFElement();
   document.body.appendChild(el);
@@ -690,7 +698,7 @@ async function submitReport(){
     const pettyActual = safeNum(document.getElementById('petty-actual').value);
     const expected = pettyOpen - totalPurch;
     const diff = pettyActual - expected;
-    const sendDate = date || new Date().toISOString().split('T')[0];
+    const sendDate = date || getLocalDateStr();
 
     const payload = {
       to_email: toEmail,
@@ -730,7 +738,6 @@ async function submitReport(){
     const result = await response.json();
 
     if(result.status === 'success'){
-      // 히스토리 저장 + 표시 갱신
       savePettyHistory(sendDate, pettyOpen, pettyActual, totalPurch);
       renderPettyHistory();
 
@@ -773,7 +780,7 @@ function restoreFormData(){
   try {
     const data = JSON.parse(localStorage.getItem('cashform') || '{}');
     const saved = data['inp-date'];
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateStr();
     if(saved !== today) return;
 
     FIELD_CLASSES.forEach(cls => {
@@ -801,22 +808,27 @@ function clearAll(){
   document.getElementById('photo-preview').innerHTML = '';
   document.getElementById('photo-count').textContent = '';
   photoEntries.length = 0;
-  // opening 입력칸 하이라이트 제거
   document.getElementById('petty-opening').classList.remove('autofilled');
+  // 날짜는 오늘로 다시 설정
+  document.getElementById('inp-date').value = getLocalDateStr();
   calcAll();
   const btn = document.getElementById('submit-btn');
   btn.disabled = false;
   btn.textContent = SEND_BTN_LABEL;
   btn.style.background = '';
   document.getElementById('status-msg').style.display = 'none';
-  // Clear 후 다시 어제 잔액 자동채우기
   autofillOpeningFromYesterday();
 }
 
 // ───────── 초기화 ─────────
 document.querySelectorAll('input').forEach(i => i.addEventListener('input', saveFormData));
 
-const todayStr = new Date().toISOString().split('T')[0];
+// 날짜 수동 변경 시 히스토리 갱신
+document.getElementById('inp-date').addEventListener('change', () => {
+  renderPettyHistory();
+});
+
+const todayStr = getLocalDateStr();
 document.getElementById('inp-date').value = todayStr;
 const lastSaved = JSON.parse(localStorage.getItem('cashform') || '{}');
 if(lastSaved['inp-date'] && lastSaved['inp-date'] !== todayStr){
