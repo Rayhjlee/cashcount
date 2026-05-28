@@ -93,7 +93,11 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .row-red{background:#fce8e8}
 .petty-input-row{display:flex;justify-content:space-between;align-items:center;padding:0 16px;background:#fff;border-bottom:1px solid #f0f0f0;min-height:50px}
 .petty-number-input{border:none;background:transparent;font-size:16px;font-weight:700;padding:14px 0;text-align:right;width:130px;outline:none;color:var(--text);transition:background 0.3s}
-.petty-history{padding:8px 16px;background:#f9f9f9;font-size:11px;color:#666;border-bottom:1px solid #f0f0f0;line-height:1.6;display:none}
+.petty-history{padding:10px 16px;background:#f9f9f9;font-size:11px;color:#666;border-bottom:1px solid #f0f0f0;line-height:1.7;display:none}
+.petty-history > div{padding:1px 0}
+
+.weekly-banner{display:none;margin:10px;padding:12px 16px;background:linear-gradient(135deg,#6b39b2,#3b72b8);color:#fff;border-radius:14px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(107,57,178,0.3)}
+.weekly-banner.show{display:block}
 
 .photo-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);background:#fff}
 .photo-inner{padding:14px 16px}
@@ -145,6 +149,11 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
     <label>Staff</label>
     <input type="text" id="inp-staff" placeholder="Your name">
   </div>
+</div>
+
+<!-- 토요일 주간 서머리 알림 -->
+<div id="weekly-banner" class="weekly-banner">
+  📅 Saturday — Weekly summary will be included
 </div>
 
 <!-- SALES REGISTER -->
@@ -286,7 +295,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.11 — 2026.05.29</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.13 — 2026.05.29</div>
 </div>
 
 <script>
@@ -302,20 +311,53 @@ const STORE_NAMES = ['Woolworths', 'Coles', 'Fresh Corp', 'Aldi', 'Seoul Mart'];
 const FIXED_STORE_COUNT = STORE_NAMES.length;
 const HISTORY_KEY = 'petty_history';
 const HISTORY_MAX = 3;
-const HISTORY_KEEP = 14;
+const HISTORY_KEEP = 60; // 주간 서머리를 위해 60일치 보관
 
 // ───────── 유틸 ─────────
 const fmt = v => '$' + (parseFloat(v) || 0).toFixed(2);
 const safeNum = v => parseFloat(v) || 0;
 const photoEntries = [];
 
-// 로컬 시간 기준 YYYY-MM-DD (타임존 안전)
+// 로컬 시간 기준 YYYY-MM-DD
 function getLocalDateStr(d){
   const dt = d || new Date();
   const y = dt.getFullYear();
   const m = String(dt.getMonth() + 1).padStart(2, '0');
   const day = String(dt.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+// 날짜 문자열 → Date 객체 (타임존 안전)
+function parseLocalDate(dateStr){
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// 호주식 DD/MM 표기
+function formatAuDate(dateStr){
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}`;
+}
+
+// 요일 (0=일, 6=토)
+function getDayOfWeek(dateStr){
+  return parseLocalDate(dateStr).getDay();
+}
+
+// 어떤 날짜가 속한 주의 일요일(시작) 날짜 반환
+function getWeekStart(dateStr){
+  const d = parseLocalDate(dateStr);
+  const day = d.getDay(); // 0=일요일
+  d.setDate(d.getDate() - day);
+  return getLocalDateStr(d);
+}
+
+// 어떤 날짜가 속한 주의 토요일(끝) 날짜 반환
+function getWeekEnd(dateStr){
+  const d = parseLocalDate(dateStr);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (6 - day));
+  return getLocalDateStr(d);
 }
 
 // ───────── 이미지 압축 ─────────
@@ -485,28 +527,38 @@ function loadSettings(){
 }
 loadSettings();
 
-// ───────── Petty Cash 히스토리 ─────────
+// ───────── 히스토리 (확장: 매출 정보도 함께 저장) ─────────
 function getHistoryLog(){
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
   } catch(e) { return []; }
 }
 
-function savePettyHistory(date, opening, actual, spent){
-  if(!date) return;
+function savePettyHistory(entry){
+  if(!entry || !entry.date) return;
+  // 의미있는 데이터만 저장
+  if(safeNum(entry.opening) <= 0 && safeNum(entry.actual) <= 0 && safeNum(entry.sales) <= 0) return;
   try {
     const log = getHistoryLog();
-    const filtered = log.filter(e => e.date !== date);
-    filtered.unshift({
-      date: date,
-      opening: safeNum(opening),
-      actual: safeNum(actual),
-      spent: safeNum(spent)
-    });
+    const filtered = log.filter(e => e.date !== entry.date);
+    filtered.unshift(entry);
     filtered.sort((a, b) => b.date.localeCompare(a.date));
     const trimmed = filtered.slice(0, HISTORY_KEEP);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
   } catch(e) { console.warn('History save failed:', e); }
+}
+
+function cleanupEmptyHistory(){
+  try {
+    const log = getHistoryLog();
+    const cleaned = log.filter(e =>
+      safeNum(e.opening) > 0 || safeNum(e.actual) > 0 || safeNum(e.sales) > 0
+    );
+    if(cleaned.length !== log.length){
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(cleaned));
+      console.log(`Cleaned ${log.length - cleaned.length} empty entries`);
+    }
+  } catch(e) { console.warn('Cleanup failed:', e); }
 }
 
 function renderPettyHistory(){
@@ -514,16 +566,17 @@ function renderPettyHistory(){
   if(!el) return;
   const log = getHistoryLog();
   const todayStr = getLocalDateStr();
-  const recent = log.filter(e => e.date !== todayStr).slice(0, HISTORY_MAX);
+  const meaningful = log.filter(e => e.date !== todayStr && (e.opening > 0 || e.actual > 0));
+  const recent = meaningful.slice(0, HISTORY_MAX);
   if(recent.length === 0){
     el.style.display = 'none';
     return;
   }
-  const parts = recent.map(e => {
-    const d = e.date.slice(5).replace('-','/');
-    return `<b>${d}</b>: Open $${e.opening.toFixed(0)} → End $${e.actual.toFixed(0)}`;
+  const lines = recent.map(e => {
+    const dateLabel = formatAuDate(e.date);
+    return `<div><b>${dateLabel}</b> &nbsp; Open $${e.opening.toFixed(0)} → End $${e.actual.toFixed(0)}</div>`;
   });
-  el.innerHTML = '📊 Recent: ' + parts.join(' &nbsp;|&nbsp; ');
+  el.innerHTML = '<div style="font-weight:700;margin-bottom:4px">📊 Recent</div>' + lines.join('');
   el.style.display = 'block';
 }
 
@@ -533,7 +586,7 @@ function autofillOpeningFromYesterday(){
 
   const log = getHistoryLog();
   const todayStr = getLocalDateStr();
-  const lastEntry = log.find(e => e.date !== todayStr);
+  const lastEntry = log.find(e => e.date !== todayStr && e.actual > 0);
   if(!lastEntry) return;
 
   openingInput.value = lastEntry.actual.toFixed(2);
@@ -551,7 +604,100 @@ function autofillOpeningFromYesterday(){
   calcAll();
 }
 
+cleanupEmptyHistory();
 renderPettyHistory();
+
+// ───────── 주간 서머리 ─────────
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function buildWeeklySummary(saturdayDateStr){
+  const weekStart = getWeekStart(saturdayDateStr); // 일요일
+  const weekEnd = saturdayDateStr; // 토요일
+  const log = getHistoryLog();
+
+  // 이번 주 데이터 (오늘 토요일 데이터는 아직 저장 전이므로 현재 폼에서 가져옴)
+  const weekData = log.filter(e => e.date >= weekStart && e.date <= weekEnd);
+
+  // 오늘(토요일) 현재 폼 데이터를 임시로 추가
+  const todayStr = getLocalDateStr();
+  const todaySales = safeNum(document.getElementById('actual-sales').textContent.replace('$', ''));
+  const todaySpent = safeNum(document.getElementById('total-purchases').textContent.replace('$', ''));
+  if(saturdayDateStr === todayStr){
+    // 같은 날짜 기존 데이터 제거 후 현재 폼 데이터 추가
+    const idx = weekData.findIndex(e => e.date === todayStr);
+    const todayEntry = {
+      date: todayStr,
+      opening: safeNum(document.getElementById('petty-opening').value),
+      actual: safeNum(document.getElementById('petty-actual').value),
+      spent: todaySpent,
+      sales: todaySales
+    };
+    if(idx >= 0) weekData[idx] = todayEntry;
+    else weekData.push(todayEntry);
+  }
+
+  // 일~토 순으로 정렬
+  weekData.sort((a, b) => a.date.localeCompare(b.date));
+
+  let totalSales = 0;
+  let totalSpent = 0;
+  const dailyRows = [];
+
+  // 일요일부터 토요일까지 7일 순회
+  const startDate = parseLocalDate(weekStart);
+  for(let i = 0; i < 7; i++){
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const dStr = getLocalDateStr(d);
+    const entry = weekData.find(e => e.date === dStr);
+    const dayName = DAY_NAMES[i];
+    const auDate = formatAuDate(dStr);
+
+    if(entry){
+      const sales = safeNum(entry.sales);
+      const spent = safeNum(entry.spent);
+      totalSales += sales;
+      totalSpent += spent;
+      dailyRows.push({
+        day: dayName,
+        date: auDate,
+        sales: sales,
+        spent: spent,
+        hasData: true
+      });
+    } else {
+      dailyRows.push({
+        day: dayName,
+        date: auDate,
+        sales: 0,
+        spent: 0,
+        hasData: false
+      });
+    }
+  }
+
+  return {
+    week_start: formatAuDate(weekStart),
+    week_end: formatAuDate(weekEnd),
+    total_sales: totalSales,
+    total_spent: totalSpent,
+    net: totalSales - totalSpent,
+    days_with_data: dailyRows.filter(r => r.hasData).length,
+    daily: dailyRows
+  };
+}
+
+// 토요일 배너 표시/숨김
+function updateWeeklyBanner(){
+  const dateStr = document.getElementById('inp-date').value;
+  if(!dateStr) return;
+  const banner = document.getElementById('weekly-banner');
+  if(getDayOfWeek(dateStr) === 6){
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
 
 // ───────── PDF 빌더 ─────────
 function buildPDFElement(){
@@ -696,9 +842,11 @@ async function submitReport(){
     const pettyOpen = safeNum(document.getElementById('petty-opening').value);
     const totalPurch = safeNum(document.getElementById('total-purchases').textContent.replace('$',''));
     const pettyActual = safeNum(document.getElementById('petty-actual').value);
+    const actualSales = safeNum(document.getElementById('actual-sales').textContent.replace('$',''));
     const expected = pettyOpen - totalPurch;
     const diff = pettyActual - expected;
     const sendDate = date || getLocalDateStr();
+    const isSaturday = getDayOfWeek(sendDate) === 6;
 
     const payload = {
       to_email: toEmail,
@@ -719,8 +867,14 @@ async function submitReport(){
       photos: photoEntries.map(e => e.b64)
     };
 
+    // 토요일이면 주간 서머리 첨부
+    if(isSaturday){
+      payload.weekly_summary = buildWeeklySummary(sendDate);
+      payload.is_weekly = true;
+    }
+
     const payloadStr = JSON.stringify(payload);
-    console.log('Sending: photos=' + photoEntries.length + ', size=' + (payloadStr.length/1024).toFixed(1) + ' KB');
+    console.log('Sending: photos=' + photoEntries.length + ', size=' + (payloadStr.length/1024).toFixed(1) + ' KB' + (isSaturday ? ' (weekly)' : ''));
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
@@ -738,10 +892,20 @@ async function submitReport(){
     const result = await response.json();
 
     if(result.status === 'success'){
-      savePettyHistory(sendDate, pettyOpen, pettyActual, totalPurch);
+      // 히스토리에 매출 정보까지 함께 저장
+      savePettyHistory({
+        date: sendDate,
+        opening: pettyOpen,
+        actual: pettyActual,
+        spent: totalPurch,
+        sales: actualSales
+      });
       renderPettyHistory();
 
-      showStatus('success', '✅ Report sent successfully!');
+      const successMsg = isSaturday
+        ? '✅ Report + Weekly Summary sent!'
+        : '✅ Report sent successfully!';
+      showStatus('success', successMsg);
       btn.textContent = '✅ Sent — Send Again';
       btn.style.background = '#1a7a1a';
       btn.disabled = false;
@@ -809,9 +973,9 @@ function clearAll(){
   document.getElementById('photo-count').textContent = '';
   photoEntries.length = 0;
   document.getElementById('petty-opening').classList.remove('autofilled');
-  // 날짜는 오늘로 다시 설정
   document.getElementById('inp-date').value = getLocalDateStr();
   calcAll();
+  updateWeeklyBanner();
   const btn = document.getElementById('submit-btn');
   btn.disabled = false;
   btn.textContent = SEND_BTN_LABEL;
@@ -823,9 +987,9 @@ function clearAll(){
 // ───────── 초기화 ─────────
 document.querySelectorAll('input').forEach(i => i.addEventListener('input', saveFormData));
 
-// 날짜 수동 변경 시 히스토리 갱신
 document.getElementById('inp-date').addEventListener('change', () => {
   renderPettyHistory();
+  updateWeeklyBanner();
 });
 
 const todayStr = getLocalDateStr();
@@ -838,6 +1002,7 @@ if(lastSaved['inp-date'] && lastSaved['inp-date'] !== todayStr){
 }
 calcAll();
 autofillOpeningFromYesterday();
+updateWeeklyBanner();
 </script>
 </body>
 </html>
