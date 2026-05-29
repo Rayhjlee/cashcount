@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -114,6 +114,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 .btn-send:disabled{background:#aaa;box-shadow:none;cursor:not-allowed}
 .btn-pdf{width:100%;padding:13px;background:#fff;color:#555;border:1.5px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-pdf:active{transform:scale(0.98);background:#f5f5f5}
+.btn-view{width:100%;padding:13px;background:#fff;color:#3b72b8;border:1.5px solid #3b72b8;font-size:14px;font-weight:600;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-view:active{transform:scale(0.98);background:#eef3fc}
 .btn-clear{width:100%;padding:13px;background:#fff;color:#cc2222;border:2px solid #cc2222;font-size:14px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-clear:active{transform:scale(0.98)}
 .status-msg{padding:14px;text-align:center;font-size:14px;font-weight:600;border-radius:10px;display:none;word-break:break-word}
@@ -292,10 +294,13 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   <button class="btn-pdf" onclick="downloadPDF()">
     📄 Save PDF only
   </button>
+  <button class="btn-view" onclick="openHistoryViewer()">
+    📊 View History (Password)
+  </button>
   <button class="btn-clear" onclick="clearAll()">
     🗑️ Clear All Data
   </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.13 — 2026.05.29</div>
+  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.15 — 2026.05.29</div>
 </div>
 
 <script>
@@ -311,14 +316,13 @@ const STORE_NAMES = ['Woolworths', 'Coles', 'Fresh Corp', 'Aldi', 'Seoul Mart'];
 const FIXED_STORE_COUNT = STORE_NAMES.length;
 const HISTORY_KEY = 'petty_history';
 const HISTORY_MAX = 3;
-const HISTORY_KEEP = 60; // 주간 서머리를 위해 60일치 보관
+const HISTORY_KEEP = 60;
 
 // ───────── 유틸 ─────────
 const fmt = v => '$' + (parseFloat(v) || 0).toFixed(2);
 const safeNum = v => parseFloat(v) || 0;
 const photoEntries = [];
 
-// 로컬 시간 기준 YYYY-MM-DD
 function getLocalDateStr(d){
   const dt = d || new Date();
   const y = dt.getFullYear();
@@ -327,32 +331,27 @@ function getLocalDateStr(d){
   return `${y}-${m}-${day}`;
 }
 
-// 날짜 문자열 → Date 객체 (타임존 안전)
 function parseLocalDate(dateStr){
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
-// 호주식 DD/MM 표기
 function formatAuDate(dateStr){
   const [y, m, d] = dateStr.split('-');
   return `${d}/${m}`;
 }
 
-// 요일 (0=일, 6=토)
 function getDayOfWeek(dateStr){
   return parseLocalDate(dateStr).getDay();
 }
 
-// 어떤 날짜가 속한 주의 일요일(시작) 날짜 반환
 function getWeekStart(dateStr){
   const d = parseLocalDate(dateStr);
-  const day = d.getDay(); // 0=일요일
+  const day = d.getDay();
   d.setDate(d.getDate() - day);
   return getLocalDateStr(d);
 }
 
-// 어떤 날짜가 속한 주의 토요일(끝) 날짜 반환
 function getWeekEnd(dateStr){
   const d = parseLocalDate(dateStr);
   const day = d.getDay();
@@ -527,7 +526,18 @@ function loadSettings(){
 }
 loadSettings();
 
-// ───────── 히스토리 (확장: 매출 정보도 함께 저장) ─────────
+// ───────── 히스토리 열람 페이지 열기 ─────────
+function openHistoryViewer(){
+  const gasUrl = document.getElementById('gas-url').value.trim() || DEFAULT_GAS_URL;
+  if(!gasUrl){
+    alert('Please set Google Script URL in Email Settings first');
+    return;
+  }
+  const viewerUrl = gasUrl + '?action=view';
+  window.open(viewerUrl, '_blank');
+}
+
+// ───────── 히스토리 ─────────
 function getHistoryLog(){
   try {
     return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -536,7 +546,6 @@ function getHistoryLog(){
 
 function savePettyHistory(entry){
   if(!entry || !entry.date) return;
-  // 의미있는 데이터만 저장
   if(safeNum(entry.opening) <= 0 && safeNum(entry.actual) <= 0 && safeNum(entry.sales) <= 0) return;
   try {
     const log = getHistoryLog();
@@ -561,12 +570,38 @@ function cleanupEmptyHistory(){
   } catch(e) { console.warn('Cleanup failed:', e); }
 }
 
+function deduplicateHistory(){
+  try {
+    const log = getHistoryLog();
+    const seen = {};
+    const unique = [];
+    for(let i = 0; i < log.length; i++){
+      const e = log[i];
+      if(!seen[e.date]){
+        seen[e.date] = true;
+        unique.push(e);
+      }
+    }
+    if(unique.length !== log.length){
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(unique));
+      console.log(`Removed ${log.length - unique.length} duplicates`);
+    }
+  } catch(e) { console.warn('Dedup failed:', e); }
+}
+
 function renderPettyHistory(){
   const el = document.getElementById('petty-history');
   if(!el) return;
   const log = getHistoryLog();
   const todayStr = getLocalDateStr();
-  const meaningful = log.filter(e => e.date !== todayStr && (e.opening > 0 || e.actual > 0));
+  const seen = {};
+  const meaningful = log.filter(e => {
+    if(e.date === todayStr) return false;
+    if(!(e.opening > 0 || e.actual > 0)) return false;
+    if(seen[e.date]) return false;
+    seen[e.date] = true;
+    return true;
+  });
   const recent = meaningful.slice(0, HISTORY_MAX);
   if(recent.length === 0){
     el.style.display = 'none';
@@ -605,25 +640,22 @@ function autofillOpeningFromYesterday(){
 }
 
 cleanupEmptyHistory();
+deduplicateHistory();
 renderPettyHistory();
 
 // ───────── 주간 서머리 ─────────
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function buildWeeklySummary(saturdayDateStr){
-  const weekStart = getWeekStart(saturdayDateStr); // 일요일
-  const weekEnd = saturdayDateStr; // 토요일
+  const weekStart = getWeekStart(saturdayDateStr);
+  const weekEnd = saturdayDateStr;
   const log = getHistoryLog();
-
-  // 이번 주 데이터 (오늘 토요일 데이터는 아직 저장 전이므로 현재 폼에서 가져옴)
   const weekData = log.filter(e => e.date >= weekStart && e.date <= weekEnd);
 
-  // 오늘(토요일) 현재 폼 데이터를 임시로 추가
   const todayStr = getLocalDateStr();
   const todaySales = safeNum(document.getElementById('actual-sales').textContent.replace('$', ''));
   const todaySpent = safeNum(document.getElementById('total-purchases').textContent.replace('$', ''));
   if(saturdayDateStr === todayStr){
-    // 같은 날짜 기존 데이터 제거 후 현재 폼 데이터 추가
     const idx = weekData.findIndex(e => e.date === todayStr);
     const todayEntry = {
       date: todayStr,
@@ -636,14 +668,12 @@ function buildWeeklySummary(saturdayDateStr){
     else weekData.push(todayEntry);
   }
 
-  // 일~토 순으로 정렬
   weekData.sort((a, b) => a.date.localeCompare(b.date));
 
   let totalSales = 0;
   let totalSpent = 0;
   const dailyRows = [];
 
-  // 일요일부터 토요일까지 7일 순회
   const startDate = parseLocalDate(weekStart);
   for(let i = 0; i < 7; i++){
     const d = new Date(startDate);
@@ -658,21 +688,9 @@ function buildWeeklySummary(saturdayDateStr){
       const spent = safeNum(entry.spent);
       totalSales += sales;
       totalSpent += spent;
-      dailyRows.push({
-        day: dayName,
-        date: auDate,
-        sales: sales,
-        spent: spent,
-        hasData: true
-      });
+      dailyRows.push({day: dayName, date: auDate, sales: sales, spent: spent, hasData: true});
     } else {
-      dailyRows.push({
-        day: dayName,
-        date: auDate,
-        sales: 0,
-        spent: 0,
-        hasData: false
-      });
+      dailyRows.push({day: dayName, date: auDate, sales: 0, spent: 0, hasData: false});
     }
   }
 
@@ -687,7 +705,6 @@ function buildWeeklySummary(saturdayDateStr){
   };
 }
 
-// 토요일 배너 표시/숨김
 function updateWeeklyBanner(){
   const dateStr = document.getElementById('inp-date').value;
   if(!dateStr) return;
@@ -867,7 +884,6 @@ async function submitReport(){
       photos: photoEntries.map(e => e.b64)
     };
 
-    // 토요일이면 주간 서머리 첨부
     if(isSaturday){
       payload.weekly_summary = buildWeeklySummary(sendDate);
       payload.is_weekly = true;
@@ -892,7 +908,6 @@ async function submitReport(){
     const result = await response.json();
 
     if(result.status === 'success'){
-      // 히스토리에 매출 정보까지 함께 저장
       savePettyHistory({
         date: sendDate,
         opening: pettyOpen,
@@ -900,6 +915,7 @@ async function submitReport(){
         spent: totalPurch,
         sales: actualSales
       });
+      deduplicateHistory();
       renderPettyHistory();
 
       const successMsg = isSaturday
