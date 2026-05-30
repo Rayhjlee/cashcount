@@ -588,6 +588,57 @@ function deduplicateHistory(){
     }
   } catch(e) { console.warn('Dedup failed:', e); }
 }
+// ───────── 서버 동기화 (클라우드 히스토리) ─────────
+async function syncHistoryFromServer(){
+  const gasUrl = (localStorage.getItem('gas-url') || DEFAULT_GAS_URL).trim();
+  if(!gasUrl) return;
+  
+  try {
+    const res = await fetch(gasUrl + '?action=recent&days=14', {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(data.status !== 'ok' || !Array.isArray(data.records)) return;
+    
+    // 서버 데이터 → 로컬 형식으로 변환 후 병합
+    const localLog = getHistoryLog();
+    const merged = {};
+    
+    // 로컬 먼저 (그대로 유지)
+    localLog.forEach(e => {
+      if(e && e.date) merged[e.date] = e;
+    });
+    
+    // 서버 데이터로 덮어쓰기 (서버가 진실의 원천)
+    data.records.forEach(r => {
+      if(!r.date) return;
+      merged[r.date] = {
+        date: r.date,
+        opening: safeNum(r.opening),
+        actual: safeNum(r.actual),
+        spent: safeNum(r.spent),
+        sales: safeNum(r.sales),
+        staff: r.staff || '',
+        fromServer: true
+      };
+    });
+    
+    const mergedArr = Object.values(merged)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, HISTORY_KEEP);
+    
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(mergedArr));
+    console.log(`Synced ${data.records.length} records from server`);
+    
+    // 화면 갱신
+    renderPettyHistory();
+    autofillOpeningFromYesterday();
+  } catch(err) {
+    console.warn('Server sync failed (will use local cache):', err.message);
+  }
+}
 
 function renderPettyHistory(){
   const el = document.getElementById('petty-history');
@@ -1017,8 +1068,14 @@ if(lastSaved['inp-date'] && lastSaved['inp-date'] !== todayStr){
   restoreFormData();
 }
 calcAll();
-autofillOpeningFromYesterday();
 updateWeeklyBanner();
+
+// ✨ 서버 동기화 후 자동완성 (네트워크 응답 후 덮어씀)
+syncHistoryFromServer().finally(() => {
+  autofillOpeningFromYesterday();
+});
+
+
 </script>
 </body>
 </html>
