@@ -660,7 +660,7 @@ function renderPettyHistory(){
   }
   const lines = recent.map(e => {
     const dateLabel = formatAuDate(e.date);
-    return `<div><b>${dateLabel}</b> &nbsp; Open $${e.opening.toFixed(0)} → End $${e.actual.toFixed(0)}</div>`;
+    return `<div><b>${dateLabel}</b> &nbsp; Open $${e.opening.toFixed(2)} → End $${e.actual.toFixed(2)}</div>`;
   });
   el.innerHTML = '<div style="font-weight:700;margin-bottom:4px">📊 Recent</div>' + lines.join('');
   el.style.display = 'block';
