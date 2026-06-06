@@ -1,1081 +1,276 @@
-l<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Daily Cash Count Sheet</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0c4a6e">
+<title>Sushi Umi Hornsby — App</title>
+
+<!-- 1.5초 후 자동 리다이렉트 / Auto-redirect after 1.5 seconds -->
+<meta http-equiv="refresh" content="2;url=https://restaurant-mate.netlify.app/umi-hornsby">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
 <style>
-:root{
-  --blue:#1a2a4a;
-  --notes-blue:#3b72b8;
-  --coins-green:#2e6e1e;
-  --purchases-purple:#6b39b2;
-  --gold:#f5c518;
-  --border:#e0e0e0;
-  --text:#1a1a1a;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: Inter, -apple-system, sans-serif;
+  background: linear-gradient(145deg, #0c4a6e 0%, #0a3554 50%, #071f33 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: white;
+  overflow: hidden;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;min-height:100vh;padding-bottom:40px}
-input{font-family:inherit}
-input[type=number]{-moz-appearance:textfield}
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 
-.app-header{background:var(--blue);color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.app-header h1{font-size:17px;font-weight:700;letter-spacing:.5px}
-.app-header .sub{font-size:11px;opacity:.65;margin-top:2px}
+/* 배경 장식 원들 / Background decorative circles */
+.bg-circle {
+  position: fixed;
+  border-radius: 50%;
+  opacity: 0.06;
+  pointer-events: none;
+}
+.bg-circle-1 {
+  width: 400px; height: 400px;
+  background: #38bdf8;
+  top: -150px; right: -100px;
+  animation: float 8s ease-in-out infinite;
+}
+.bg-circle-2 {
+  width: 300px; height: 300px;
+  background: #0ea5e9;
+  bottom: -100px; left: -80px;
+  animation: float 10s ease-in-out infinite reverse;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
 
-.top-info{display:flex;flex-direction:column;gap:10px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);width:100%;overflow:hidden}
-.info-field{display:flex;flex-direction:column;gap:4px;width:100%;min-width:0}
-.info-field label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}
-.info-field input{font-size:16px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;color:var(--text);outline:none;width:100%;min-width:0;max-width:100%;display:block}
-.info-field input:focus{border-color:var(--notes-blue);background:#fff}
+/* 카드 컨테이너 / Card container */
+.card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 28px;
+  padding: 40px 32px 36px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-.spacer{height:8px}
-.divider-label{margin:10px 10px 2px;font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.6px;padding-left:4px}
+/* 로고 / Logo */
+.logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #e0f2fe, #38bdf8);
+  border-radius: 22px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  box-shadow: 0 8px 32px rgba(56, 189, 248, 0.4);
+  animation: logoAppear 0.6s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes logoAppear {
+  from { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
 
-.section-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:2px}
-.section-header{padding:11px 16px;font-size:13px;font-weight:700;color:#fff;letter-spacing:.4px}
-.bg-blue{background:var(--notes-blue)}
-.bg-green{background:var(--coins-green)}
-.bg-purple{background:var(--purchases-purple)}
-.bg-dark{background:var(--blue)}
-.bg-gray{background:#666}
+.store-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7dd3fc;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  animation: fadeIn 0.5s 0.3s both;
+}
+.title {
+  font-size: 22px;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -0.5px;
+  margin-bottom: 24px;
+  animation: fadeIn 0.5s 0.35s both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-.col-header{display:grid;background:#f5f5f5;border-bottom:1px solid #eee}
-.col-header span{font-size:10px;font-weight:700;color:#999;padding:6px 14px;text-transform:uppercase;letter-spacing:.3px}
+/* 화살표 애니메이션 / Arrow animation */
+.redirect-box {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.5s 0.45s both;
+}
+.redirect-label {
+  font-size: 12px;
+  color: #7dd3fc;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.redirect-arrow {
+  font-size: 32px;
+  animation: bounce 1s ease-in-out infinite;
+  display: block;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
 
-.denom-list{background:#fff}
-.denom-row{display:grid;grid-template-columns:72px 1fr 88px;align-items:center;border-bottom:1px solid #f2f2f2;min-height:52px}
-.denom-row:last-child{border-bottom:none}
-.denom-label{padding:0 14px;font-size:15px;font-weight:600;color:var(--text)}
-.count-input{width:100%;border:none;background:transparent;font-size:18px;font-weight:500;padding:14px 8px;text-align:center;color:var(--text);outline:none}
-.count-input:focus{background:#eef3fc}
-.sub-val{padding:0 14px;text-align:right;font-size:14px;font-weight:600;color:#444}
-.subtotal-bar{display:flex;justify-content:space-between;align-items:center;padding:11px 16px}
-.subtotal-bar span{font-size:14px;font-weight:700}
-.subtotal-bar.blue-bar{background:#dce8f7;border-top:1px solid #b8d0ed}
-.subtotal-bar.green-bar{background:#d8eed8;border-top:1px solid #aad4aa}
+/* 프로그레스 바 / Progress bar */
+.progress-wrap {
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  animation: fadeIn 0.5s 0.5s both;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  border-radius: 99px;
+  animation: progress 2s linear forwards;
+}
+@keyframes progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
 
-.drawer-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
-.drawer-top{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;background:var(--blue)}
-.drawer-top-label{font-size:15px;font-weight:700;color:#fff}
-.drawer-top-val{font-size:19px;font-weight:700;color:var(--gold)}
-.drawer-row{display:flex;justify-content:space-between;align-items:center;padding:0 16px;background:#fff;border-bottom:1px solid #f2f2f2;min-height:50px}
-.drawer-label{font-size:14px;font-weight:500}
-.drawer-val{font-size:15px;font-weight:700}
-.float-input{border:none;background:transparent;font-size:16px;font-weight:700;padding:14px 0;text-align:right;width:130px;outline:none;color:var(--text)}
-.actual-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#e6f5e6}
-.actual-label{font-size:14px;font-weight:700}
-.actual-val{font-size:17px;font-weight:700;color:#1a7a1a}
+/* 버튼 / Button */
+.btn-now {
+  display: block;
+  width: 100%;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-family: Inter, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  animation: fadeIn 0.5s 0.55s both;
+  letter-spacing: -0.2px;
+}
+.btn-now:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.3);
+}
 
-.petty-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
-.purchase-list{background:#fff}
-.purchase-row{display:grid;grid-template-columns:1fr 100px;align-items:center;border-bottom:1px solid #f2f2f2;min-height:52px}
-.purchase-row:last-child{border-bottom:none}
-.store-label{padding:0 14px;font-size:14px;font-weight:500;color:var(--text)}
-.store-input{width:100%;border:none;background:transparent;font-size:14px;padding:14px;color:var(--text);outline:none}
-.store-input::placeholder{color:#ccc}
-.amt-input{width:100%;border:none;border-left:1px solid #f0f0f0;background:transparent;font-size:16px;font-weight:600;padding:14px 12px;text-align:right;color:var(--text);outline:none}
-.amt-input:focus{background:#f0eaff}
-.purch-col-header{display:grid;grid-template-columns:1fr 100px;background:#f5f5f5;border-bottom:1px solid #eee}
-.purch-col-header span{font-size:10px;font-weight:700;color:#999;padding:6px 14px;text-transform:uppercase}
-.purch-col-header span:last-child{text-align:right;padding-right:12px}
-
-.petty-summary-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid #f0f0f0;background:#fff}
-.petty-summary-row:last-child{border-bottom:none}
-.petty-label{font-size:14px;font-weight:500}
-.petty-val{font-size:15px;font-weight:700}
-.row-purple-light{background:#ede8f5}
-.row-gold{background:var(--gold)}
-.row-green{background:#e6f5e6}
-.row-red{background:#fce8e8}
-.petty-input-row{display:flex;justify-content:space-between;align-items:center;padding:0 16px;background:#fff;border-bottom:1px solid #f0f0f0;min-height:50px}
-.petty-number-input{border:none;background:transparent;font-size:16px;font-weight:700;padding:14px 0;text-align:right;width:130px;outline:none;color:var(--text);transition:background 0.3s}
-.petty-history{padding:10px 16px;background:#f9f9f9;font-size:11px;color:#666;border-bottom:1px solid #f0f0f0;line-height:1.7;display:none}
-.petty-history > div{padding:1px 0}
-
-.weekly-banner{display:none;margin:10px;padding:12px 16px;background:linear-gradient(135deg,#6b39b2,#3b72b8);color:#fff;border-radius:14px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(107,57,178,0.3)}
-.weekly-banner.show{display:block}
-
-.photo-card{margin:0 10px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);background:#fff}
-.photo-inner{padding:14px 16px}
-.photo-title{font-size:13px;font-weight:700;color:#555;margin-bottom:10px}
-.photo-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#f5f5f5;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:#444;cursor:pointer}
-.photo-btn:active{background:#eee}
-.photo-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
-.photo-count{font-size:11px;color:#999;margin-top:6px}
-
-.send-section{margin:10px;display:flex;flex-direction:column;gap:10px}
-.btn-send{width:100%;padding:18px;background:var(--blue);color:#fff;border:none;font-size:16px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(26,42,74,0.25)}
-.btn-send:active{transform:scale(0.98)}
-.btn-send:disabled{background:#aaa;box-shadow:none;cursor:not-allowed}
-.btn-pdf{width:100%;padding:13px;background:#fff;color:#555;border:1.5px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-pdf:active{transform:scale(0.98);background:#f5f5f5}
-.btn-view{width:100%;padding:13px;background:#fff;color:#3b72b8;border:1.5px solid #3b72b8;font-size:14px;font-weight:600;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-view:active{transform:scale(0.98);background:#eef3fc}
-.btn-clear{width:100%;padding:13px;background:#fff;color:#cc2222;border:2px solid #cc2222;font-size:14px;font-weight:700;cursor:pointer;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-clear:active{transform:scale(0.98)}
-.status-msg{padding:14px;text-align:center;font-size:14px;font-weight:600;border-radius:10px;display:none;word-break:break-word}
-.status-success{background:#d4edda;color:#155724}
-.status-error{background:#f8d7da;color:#721c24}
-.status-info{background:#d1ecf1;color:#0c5460}
-
-.setup-toggle{margin:10px;padding:13px 16px;background:#fff;border-radius:14px;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:14px;font-weight:600;color:#555;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-.setup-box{margin:0 10px 10px;padding:16px;background:#f0f4fa;border-radius:0 0 14px 14px;border:1.5px solid var(--notes-blue);border-top:none;display:none}
-.setup-box.open{display:block}
-.setup-field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-.setup-field label{font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px}
-.setup-field input{font-size:13px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:#fff;outline:none;color:var(--text)}
-.setup-field input:focus{border-color:var(--notes-blue)}
-.save-btn{width:100%;padding:11px;background:var(--notes-blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
-.save-ok{font-size:12px;color:#1a7a1a;display:none;text-align:center;margin-top:6px;font-weight:600}
-.autofilled{background:#fff8e1 !important}
+/* 홈 화면 추가 안내 / Add to Home Screen hint */
+.aths-hint {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.7;
+  text-align: left;
+  animation: fadeIn 0.5s 0.65s both;
+}
+.aths-hint .step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.aths-hint .step .num {
+  width: 18px;
+  height: 18px;
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 900;
+  color: #7dd3fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.aths-hint .hint-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #7dd3fc;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
 </style>
 </head>
+
 <body>
-
-<div class="app-header">
-  <h1>Daily Cash Count Sheet</h1>
-  <div class="sub">End of Day — Cash Register Report</div>
-</div>
-
-<div class="top-info">
-  <div class="info-field">
-    <label>Date</label>
-    <input type="date" id="inp-date" style="-webkit-appearance:none;appearance:none">
-  </div>
-  <div class="info-field">
-    <label>Staff</label>
-    <input type="text" id="inp-staff" placeholder="Your name">
-  </div>
-</div>
-
-<!-- 토요일 주간 서머리 알림 -->
-<div id="weekly-banner" class="weekly-banner">
-  📅 Saturday — Weekly summary will be included
-</div>
-
-<!-- SALES REGISTER -->
-<div class="spacer"></div>
-<div class="divider-label">Sales Register</div>
-
-<div class="section-card">
-  <div class="section-header bg-blue">Notes</div>
-  <div class="col-header" style="grid-template-columns:72px 1fr 88px;display:grid">
-    <span>Value</span><span style="text-align:center">Count</span><span style="text-align:right">Subtotal</span>
-  </div>
-  <div class="denom-list">
-    <div class="denom-row"><span class="denom-label">$100</span><input type="number" min="0" inputmode="numeric" class="count-input notes-count" data-val="100" placeholder="0"><span class="sub-val notes-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">$50</span><input type="number" min="0" inputmode="numeric" class="count-input notes-count" data-val="50" placeholder="0"><span class="sub-val notes-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">$20</span><input type="number" min="0" inputmode="numeric" class="count-input notes-count" data-val="20" placeholder="0"><span class="sub-val notes-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">$10</span><input type="number" min="0" inputmode="numeric" class="count-input notes-count" data-val="10" placeholder="0"><span class="sub-val notes-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">$5</span><input type="number" min="0" inputmode="numeric" class="count-input notes-count" data-val="5" placeholder="0"><span class="sub-val notes-sub">$0.00</span></div>
-  </div>
-  <div class="subtotal-bar blue-bar"><span>Notes Subtotal</span><span id="notes-subtotal">$0.00</span></div>
-</div>
-
-<div class="section-card" style="margin-top:2px">
-  <div class="section-header bg-green">Coins</div>
-  <div class="col-header" style="grid-template-columns:72px 1fr 88px;display:grid">
-    <span>Value</span><span style="text-align:center">Count</span><span style="text-align:right">Subtotal</span>
-  </div>
-  <div class="denom-list">
-    <div class="denom-row"><span class="denom-label">$2</span><input type="number" min="0" inputmode="numeric" class="count-input coins-count" data-val="2" placeholder="0"><span class="sub-val coins-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">$1</span><input type="number" min="0" inputmode="numeric" class="count-input coins-count" data-val="1" placeholder="0"><span class="sub-val coins-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">50c</span><input type="number" min="0" inputmode="numeric" class="count-input coins-count" data-val="0.5" placeholder="0"><span class="sub-val coins-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">20c</span><input type="number" min="0" inputmode="numeric" class="count-input coins-count" data-val="0.2" placeholder="0"><span class="sub-val coins-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">10c</span><input type="number" min="0" inputmode="numeric" class="count-input coins-count" data-val="0.1" placeholder="0"><span class="sub-val coins-sub">$0.00</span></div>
-    <div class="denom-row"><span class="denom-label">5c</span><input type="number" min="0" inputmode="numeric" class="count-input coins-count" data-val="0.05" placeholder="0"><span class="sub-val coins-sub">$0.00</span></div>
-  </div>
-  <div class="subtotal-bar green-bar"><span>Coins Subtotal</span><span id="coins-subtotal">$0.00</span></div>
-</div>
-
-<div class="spacer"></div>
-<div class="drawer-card">
-  <div class="drawer-top">
-    <span class="drawer-top-label">Total Cash in Register</span>
-    <span id="register-total" class="drawer-top-val">$0.00</span>
-  </div>
-  <div class="drawer-row">
-    <label class="drawer-label">Less: Opening Float</label>
-    <input type="number" min="0" step="0.01" inputmode="decimal" id="opening-float" class="float-input" placeholder="0.00">
-  </div>
-  <div class="actual-row">
-    <span class="actual-label">Actual Cash Sales</span>
-    <span id="actual-sales" class="actual-val">$0.00</span>
-  </div>
-</div>
-
-<!-- SHOPPING PETTY CASH -->
-<div class="spacer"></div>
-<div class="divider-label">Shopping Petty Cash</div>
-
-<div class="petty-card">
-  <div class="section-header bg-purple">Cash Purchases</div>
-  <div class="purch-col-header">
-    <span>Store</span><span>Amount</span>
-  </div>
-  <div class="purchase-list">
-    <div class="purchase-row"><span class="store-label">Woolworths</span><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-    <div class="purchase-row"><span class="store-label">Coles</span><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-    <div class="purchase-row"><span class="store-label">Fresh Corp</span><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-    <div class="purchase-row"><span class="store-label">Aldi</span><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-    <div class="purchase-row"><span class="store-label">Seoul Mart</span><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-    <div class="purchase-row"><input type="text" class="store-input purch-store" placeholder="Other store"><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-    <div class="purchase-row"><input type="text" class="store-input purch-store" placeholder="Other store"><input type="number" min="0" step="0.01" inputmode="decimal" class="amt-input purch-amt" placeholder="0.00"></div>
-  </div>
-
-  <div class="petty-summary-row row-purple-light">
-    <span class="petty-label">Total Spent Today</span>
-    <span id="total-purchases" class="petty-val">$0.00</span>
-  </div>
-  <div class="petty-input-row">
-    <label class="petty-label">Opening Balance</label>
-    <input type="number" min="0" step="0.01" inputmode="decimal" id="petty-opening" class="petty-number-input" placeholder="0.00">
-  </div>
-  <div id="petty-history" class="petty-history"></div>
-  <div class="petty-summary-row row-gold">
-    <span class="petty-label" style="font-weight:700">Expected Remaining</span>
-    <span id="petty-expected" class="petty-val">$0.00</span>
-  </div>
-  <div class="petty-input-row">
-    <label class="petty-label">Actual Cash Remaining</label>
-    <input type="number" min="0" step="0.01" inputmode="decimal" id="petty-actual" class="petty-number-input" placeholder="0.00">
-  </div>
-  <div class="petty-summary-row" id="petty-diff-row">
-    <span class="petty-label">Over / Short</span>
-    <span id="petty-diff" class="petty-val">$0.00</span>
-  </div>
-</div>
-
-<!-- RECEIPT PHOTOS -->
-<div class="spacer"></div>
-<div class="divider-label">Receipt Photos</div>
-<div class="photo-card">
-  <div class="photo-inner">
-    <div class="photo-title">📎 Attach receipts (max 5)</div>
-    <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
-    <div class="photo-btn" onclick="document.getElementById('photo-input').click()">
-      📷 Select Photos
-    </div>
-    <div class="photo-preview" id="photo-preview"></div>
-    <div class="photo-count" id="photo-count"></div>
-  </div>
-</div>
-
-<!-- SETUP -->
-<div class="spacer"></div>
-<div class="setup-toggle" onclick="toggleSetup()">
-  <span>⚙️ Email Settings</span>
-  <span id="setup-arrow">▼</span>
-</div>
-<div class="setup-box" id="setup-box">
-  <div class="setup-field">
-    <label>Google Script URL</label>
-    <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/...">
-  </div>
-  <div class="setup-field">
-    <label>Send report to (email)</label>
-    <input type="email" id="to-email" placeholder="umihornsby@gmail.com">
-  </div>
-  <button class="save-btn" onclick="saveSettings()">Save Settings</button>
-  <div id="save-ok" class="save-ok">✓ Saved</div>
-</div>
-
-<!-- BUTTONS -->
-<div class="send-section">
-  <div id="status-msg" class="status-msg"></div>
-  <button class="btn-send" id="submit-btn" onclick="submitReport()">
-    ✉️ Send Report
-  </button>
-  <button class="btn-pdf" onclick="downloadPDF()">
-    📄 Save PDF only
-  </button>
-  <button class="btn-view" onclick="openHistoryViewer()">
-    📊 View History (Password)
-  </button>
-  <button class="btn-clear" onclick="clearAll()">
-    🗑️ Clear All Data
-  </button>
-  <div style="text-align:center;padding:8px;font-size:11px;color:#bbb">v2.15 — 2026.05.29</div>
-</div>
-
-<script>
-// ───────── 설정 상수 ─────────
-const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyfs0VblWyScK7GLmpDkbobAQ7kClGxSzX2JXpnHnKVEUrH43hcGWdWbLSBBFCMSb79/exec';
-const DEFAULT_TO = 'umihornsby@gmail.com';
-const SEND_BTN_LABEL = '✉️ Send Report';
-const MAX_PHOTOS = 5;
-const MAX_PHOTO_WIDTH = 1200;
-const JPEG_QUALITY = 0.7;
-const SEND_TIMEOUT_MS = 120000;
-const STORE_NAMES = ['Woolworths', 'Coles', 'Fresh Corp', 'Aldi', 'Seoul Mart'];
-const FIXED_STORE_COUNT = STORE_NAMES.length;
-const HISTORY_KEY = 'petty_history';
-const HISTORY_MAX = 3;
-const HISTORY_KEEP = 60;
-
-// ───────── 유틸 ─────────
-const fmt = v => '$' + (parseFloat(v) || 0).toFixed(2);
-const safeNum = v => parseFloat(v) || 0;
-const photoEntries = [];
-
-function getLocalDateStr(d){
-  const dt = d || new Date();
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, '0');
-  const day = String(dt.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function parseLocalDate(dateStr){
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function formatAuDate(dateStr){
-  const [y, m, d] = dateStr.split('-');
-  return `${d}/${m}`;
-}
-
-function getDayOfWeek(dateStr){
-  return parseLocalDate(dateStr).getDay();
-}
-
-function getWeekStart(dateStr){
-  const d = parseLocalDate(dateStr);
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
-  return getLocalDateStr(d);
-}
-
-function getWeekEnd(dateStr){
-  const d = parseLocalDate(dateStr);
-  const day = d.getDay();
-  d.setDate(d.getDate() + (6 - day));
-  return getLocalDateStr(d);
-}
-
-// ───────── 이미지 압축 ─────────
-function compressImage(file){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const scale = Math.min(1, MAX_PHOTO_WIDTH / img.width);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.width * scale);
-          canvas.height = Math.round(img.height * scale);
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-          resolve(dataUrl.split(',')[1]);
-        } catch(err) { reject(err); }
-      };
-      img.onerror = () => reject(new Error('Image load failed'));
-      img.src = ev.target.result;
-    };
-    reader.onerror = () => reject(new Error('File read failed'));
-    reader.readAsDataURL(file);
-  });
-}
-
-// ───────── 합산 계산 ─────────
-function calcAll(){
-  let notes = 0;
-  const notesInputs = document.querySelectorAll('.notes-count');
-  const notesSubs = document.querySelectorAll('.notes-sub');
-  notesInputs.forEach((inp, i) => {
-    const v = safeNum(inp.value) * safeNum(inp.dataset.val);
-    notesSubs[i].textContent = fmt(v);
-    notes += v;
-  });
-  document.getElementById('notes-subtotal').textContent = fmt(notes);
-
-  let coins = 0;
-  const coinsInputs = document.querySelectorAll('.coins-count');
-  const coinsSubs = document.querySelectorAll('.coins-sub');
-  coinsInputs.forEach((inp, i) => {
-    const v = safeNum(inp.value) * safeNum(inp.dataset.val);
-    coinsSubs[i].textContent = fmt(v);
-    coins += v;
-  });
-  document.getElementById('coins-subtotal').textContent = fmt(coins);
-
-  const total = notes + coins;
-  const openFloat = safeNum(document.getElementById('opening-float').value);
-  document.getElementById('register-total').textContent = fmt(total);
-  document.getElementById('actual-sales').textContent = fmt(total - openFloat);
-
-  let purch = 0;
-  document.querySelectorAll('.purch-amt').forEach(inp => { purch += safeNum(inp.value); });
-  document.getElementById('total-purchases').textContent = fmt(purch);
-
-  const pettyOpen = safeNum(document.getElementById('petty-opening').value);
-  const expected = pettyOpen - purch;
-  document.getElementById('petty-expected').textContent = fmt(expected);
-
-  const pettyActual = safeNum(document.getElementById('petty-actual').value);
-  const diff = pettyActual - expected;
-  const diffEl = document.getElementById('petty-diff');
-  const diffRow = document.getElementById('petty-diff-row');
-  diffEl.textContent = fmt(diff);
-  diffRow.className = 'petty-summary-row ' + (diff < 0 ? 'row-red' : diff > 0 ? 'row-green' : '');
-}
-
-document.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcAll));
-
-// ───────── 구매 데이터 ─────────
-function getStoreName(rowIndex){
-  if(rowIndex < FIXED_STORE_COUNT) return STORE_NAMES[rowIndex];
-  const stores = document.querySelectorAll('.purch-store');
-  const otherIdx = rowIndex - FIXED_STORE_COUNT;
-  const customName = stores[otherIdx] && stores[otherIdx].value.trim();
-  return customName || 'Other';
-}
-
-function getPurchaseLines(){
-  const amts = document.querySelectorAll('.purch-amt');
-  let lines = '';
-  amts.forEach((inp, i) => {
-    const amt = safeNum(inp.value);
-    if(amt > 0) lines += `${getStoreName(i)}: $${amt.toFixed(2)}  `;
-  });
-  return lines || 'None';
-}
-
-function getPurchaseRows(){
-  const amts = document.querySelectorAll('.purch-amt');
-  const rows = [];
-  amts.forEach((inp, i) => {
-    const amt = safeNum(inp.value);
-    if(amt > 0) rows.push({ store: getStoreName(i), amount: '$' + amt.toFixed(2) });
-  });
-  return rows;
-}
-
-// ───────── 사진 처리 ─────────
-document.getElementById('photo-input').addEventListener('change', async e => {
-  const files = Array.from(e.target.files);
-  const remaining = MAX_PHOTOS - photoEntries.length;
-  if(remaining <= 0){ alert(`Maximum ${MAX_PHOTOS} photos allowed`); return; }
-  const toAdd = files.slice(0, remaining);
-  const prev = document.getElementById('photo-preview');
-  const countEl = document.getElementById('photo-count');
-  countEl.textContent = 'Compressing...';
-
-  for(const f of toAdd){
-    try {
-      const compressed = await compressImage(f);
-      const img = document.createElement('img');
-      img.src = 'data:image/jpeg;base64,' + compressed;
-      img.className = 'photo-thumb';
-      img.title = 'Tap to remove';
-
-      const entry = { b64: compressed, img: img };
-      photoEntries.push(entry);
-
-      img.onclick = function(){
-        const idx = photoEntries.indexOf(entry);
-        if(idx >= 0){
-          photoEntries.splice(idx, 1);
-          img.remove();
-          updatePhotoCount();
-        }
-      };
-      prev.appendChild(img);
-    } catch(err) {
-      console.error('Photo compress failed:', err);
-    }
-  }
-  updatePhotoCount();
-  e.target.value = '';
-});
-
-function updatePhotoCount(){
-  const countEl = document.getElementById('photo-count');
-  countEl.textContent = photoEntries.length > 0
-    ? `${photoEntries.length} photo(s) — tap to remove`
-    : '';
-}
-
-// ───────── 설정 패널 ─────────
-function toggleSetup(){
-  const box = document.getElementById('setup-box');
-  const arrow = document.getElementById('setup-arrow');
-  box.classList.toggle('open');
-  arrow.textContent = box.classList.contains('open') ? '▲' : '▼';
-}
-
-function saveSettings(){
-  localStorage.setItem('gas-url', document.getElementById('gas-url').value.trim());
-  localStorage.setItem('to-email', document.getElementById('to-email').value.trim());
-  const m = document.getElementById('save-ok');
-  m.style.display = 'block';
-  setTimeout(() => m.style.display = 'none', 2000);
-}
-
-function loadSettings(){
-  document.getElementById('gas-url').value = localStorage.getItem('gas-url') || DEFAULT_GAS_URL;
-  document.getElementById('to-email').value = localStorage.getItem('to-email') || DEFAULT_TO;
-}
-loadSettings();
-
-// ───────── 히스토리 열람 페이지 열기 ─────────
-function openHistoryViewer(){
-  const gasUrl = document.getElementById('gas-url').value.trim() || DEFAULT_GAS_URL;
-  if(!gasUrl){
-    alert('Please set Google Script URL in Email Settings first');
-    return;
-  }
-  const viewerUrl = gasUrl + '?action=view';
-  window.open(viewerUrl, '_blank');
-}
-
-// ───────── 히스토리 ─────────
-function getHistoryLog(){
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-  } catch(e) { return []; }
-}
-
-function savePettyHistory(entry){
-  if(!entry || !entry.date) return;
-  if(safeNum(entry.opening) <= 0 && safeNum(entry.actual) <= 0 && safeNum(entry.sales) <= 0) return;
-  try {
-    const log = getHistoryLog();
-    const filtered = log.filter(e => e.date !== entry.date);
-    filtered.unshift(entry);
-    filtered.sort((a, b) => b.date.localeCompare(a.date));
-    const trimmed = filtered.slice(0, HISTORY_KEEP);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
-  } catch(e) { console.warn('History save failed:', e); }
-}
-
-function cleanupEmptyHistory(){
-  try {
-    const log = getHistoryLog();
-    const cleaned = log.filter(e =>
-      safeNum(e.opening) > 0 || safeNum(e.actual) > 0 || safeNum(e.sales) > 0
-    );
-    if(cleaned.length !== log.length){
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(cleaned));
-      console.log(`Cleaned ${log.length - cleaned.length} empty entries`);
-    }
-  } catch(e) { console.warn('Cleanup failed:', e); }
-}
-
-function deduplicateHistory(){
-  try {
-    const log = getHistoryLog();
-    const seen = {};
-    const unique = [];
-    for(let i = 0; i < log.length; i++){
-      const e = log[i];
-      if(!seen[e.date]){
-        seen[e.date] = true;
-        unique.push(e);
-      }
-    }
-    if(unique.length !== log.length){
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(unique));
-      console.log(`Removed ${log.length - unique.length} duplicates`);
-    }
-  } catch(e) { console.warn('Dedup failed:', e); }
-}
-// ───────── 서버 동기화 (클라우드 히스토리) ─────────
-async function syncHistoryFromServer(){
-  const gasUrl = (localStorage.getItem('gas-url') || DEFAULT_GAS_URL).trim();
-  if(!gasUrl) return;
-  
-  try {
-    const res = await fetch(gasUrl + '?action=recent&days=14', {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if(data.status !== 'ok' || !Array.isArray(data.records)) return;
-    
-    // 서버 데이터 → 로컬 형식으로 변환 후 병합
-    const localLog = getHistoryLog();
-    const merged = {};
-    
-    // 로컬 먼저 (그대로 유지)
-    localLog.forEach(e => {
-      if(e && e.date) merged[e.date] = e;
-    });
-    
-    // 서버 데이터로 덮어쓰기 (서버가 진실의 원천)
-    data.records.forEach(r => {
-      if(!r.date) return;
-      merged[r.date] = {
-        date: r.date,
-        opening: safeNum(r.opening),
-        actual: safeNum(r.actual),
-        spent: safeNum(r.spent),
-        sales: safeNum(r.sales),
-        staff: r.staff || '',
-        fromServer: true
-      };
-    });
-    
-    const mergedArr = Object.values(merged)
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, HISTORY_KEEP);
-    
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(mergedArr));
-    console.log(`Synced ${data.records.length} records from server`);
-    
-    // 화면 갱신
-    renderPettyHistory();
-    autofillOpeningFromYesterday();
-  } catch(err) {
-    console.warn('Server sync failed (will use local cache):', err.message);
-  }
-}
-
-function renderPettyHistory(){
-  const el = document.getElementById('petty-history');
-  if(!el) return;
-  const log = getHistoryLog();
-  const todayStr = getLocalDateStr();
-  const seen = {};
-  const meaningful = log.filter(e => {
-    if(e.date === todayStr) return false;
-    if(!(e.opening > 0 || e.actual > 0)) return false;
-    if(seen[e.date]) return false;
-    seen[e.date] = true;
-    return true;
-  });
-  const recent = meaningful.slice(0, HISTORY_MAX);
-  if(recent.length === 0){
-    el.style.display = 'none';
-    return;
-  }
-  const lines = recent.map(e => {
-    const dateLabel = formatAuDate(e.date);
-    return `<div><b>${dateLabel}</b> &nbsp; Open $${e.opening.toFixed(2)} → End $${e.actual.toFixed(2)}</div>`;
-  });
-  el.innerHTML = '<div style="font-weight:700;margin-bottom:4px">📊 Recent</div>' + lines.join('');
-  el.style.display = 'block';
-}
-
-function autofillOpeningFromYesterday(){
-  const openingInput = document.getElementById('petty-opening');
-  if(openingInput.value && safeNum(openingInput.value) > 0) return;
-
-  const log = getHistoryLog();
-  const todayStr = getLocalDateStr();
-  const lastEntry = log.find(e => e.date !== todayStr && e.actual > 0);
-  if(!lastEntry) return;
-
-  openingInput.value = lastEntry.actual.toFixed(2);
-  openingInput.classList.add('autofilled');
-  openingInput.title = `Auto-filled from ${lastEntry.date} (editable)`;
-
-  const clearHighlight = () => {
-    openingInput.classList.remove('autofilled');
-    openingInput.removeEventListener('focus', clearHighlight);
-    openingInput.removeEventListener('input', clearHighlight);
-  };
-  openingInput.addEventListener('focus', clearHighlight);
-  openingInput.addEventListener('input', clearHighlight);
-
-  calcAll();
-}
-
-cleanupEmptyHistory();
-deduplicateHistory();
-renderPettyHistory();
-
-// ───────── 주간 서머리 ─────────
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function buildWeeklySummary(saturdayDateStr){
-  const weekStart = getWeekStart(saturdayDateStr);
-  const weekEnd = saturdayDateStr;
-  const log = getHistoryLog();
-  const weekData = log.filter(e => e.date >= weekStart && e.date <= weekEnd);
-
-  const todayStr = getLocalDateStr();
-  const todaySales = safeNum(document.getElementById('actual-sales').textContent.replace('$', ''));
-  const todaySpent = safeNum(document.getElementById('total-purchases').textContent.replace('$', ''));
-  if(saturdayDateStr === todayStr){
-    const idx = weekData.findIndex(e => e.date === todayStr);
-    const todayEntry = {
-      date: todayStr,
-      opening: safeNum(document.getElementById('petty-opening').value),
-      actual: safeNum(document.getElementById('petty-actual').value),
-      spent: todaySpent,
-      sales: todaySales
-    };
-    if(idx >= 0) weekData[idx] = todayEntry;
-    else weekData.push(todayEntry);
-  }
-
-  weekData.sort((a, b) => a.date.localeCompare(b.date));
-
-  let totalSales = 0;
-  let totalSpent = 0;
-  const dailyRows = [];
-
-  const startDate = parseLocalDate(weekStart);
-  for(let i = 0; i < 7; i++){
-    const d = new Date(startDate);
-    d.setDate(startDate.getDate() + i);
-    const dStr = getLocalDateStr(d);
-    const entry = weekData.find(e => e.date === dStr);
-    const dayName = DAY_NAMES[i];
-    const auDate = formatAuDate(dStr);
-
-    if(entry){
-      const sales = safeNum(entry.sales);
-      const spent = safeNum(entry.spent);
-      totalSales += sales;
-      totalSpent += spent;
-      dailyRows.push({day: dayName, date: auDate, sales: sales, spent: spent, hasData: true});
-    } else {
-      dailyRows.push({day: dayName, date: auDate, sales: 0, spent: 0, hasData: false});
-    }
-  }
-
-  return {
-    week_start: formatAuDate(weekStart),
-    week_end: formatAuDate(weekEnd),
-    total_sales: totalSales,
-    total_spent: totalSpent,
-    net: totalSales - totalSpent,
-    days_with_data: dailyRows.filter(r => r.hasData).length,
-    daily: dailyRows
-  };
-}
-
-function updateWeeklyBanner(){
-  const dateStr = document.getElementById('inp-date').value;
-  if(!dateStr) return;
-  const banner = document.getElementById('weekly-banner');
-  if(getDayOfWeek(dateStr) === 6){
-    banner.classList.add('show');
-  } else {
-    banner.classList.remove('show');
-  }
-}
-
-// ───────── PDF 빌더 ─────────
-function buildPDFElement(){
-  const date = document.getElementById('inp-date').value || getLocalDateStr();
-  const staff = document.getElementById('inp-staff').value || '—';
-
-  let notesRows = '';
-  const nL = ['$100','$50','$20','$10','$5'], nV = [100,50,20,10,5];
-  document.querySelectorAll('.notes-count').forEach((inp, i) => {
-    const c = parseInt(inp.value || 0);
-    if(c > 0) notesRows += `<tr><td>${nL[i]}</td><td style="text-align:right">${c}</td><td style="text-align:right">$${(c*nV[i]).toFixed(2)}</td></tr>`;
-  });
-
-  let coinsRows = '';
-  const cL = ['$2','$1','50c','20c','10c','5c'], cV = [2,1,0.5,0.2,0.1,0.05];
-  document.querySelectorAll('.coins-count').forEach((inp, i) => {
-    const c = parseInt(inp.value || 0);
-    if(c > 0) coinsRows += `<tr><td>${cL[i]}</td><td style="text-align:right">${c}</td><td style="text-align:right">$${(c*cV[i]).toFixed(2)}</td></tr>`;
-  });
-
-  let purchRows = '';
-  document.querySelectorAll('.purch-amt').forEach((inp, i) => {
-    const amt = safeNum(inp.value);
-    if(amt > 0) purchRows += `<tr><td>${getStoreName(i)}</td><td style="text-align:right">$${amt.toFixed(2)}</td></tr>`;
-  });
-
-  const pettyOpen = safeNum(document.getElementById('petty-opening').value);
-  const totalPurch = safeNum(document.getElementById('total-purchases').textContent.replace('$',''));
-  const expected = pettyOpen - totalPurch;
-  const pettyActual = safeNum(document.getElementById('petty-actual').value);
-  const diff = pettyActual - expected;
-
-  let photoHtml = '';
-  if(photoEntries.length > 0){
-    photoHtml = '<div style="margin-top:16px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">Receipts</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
-    photoEntries.forEach(e => {
-      photoHtml += `<img src="data:image/jpeg;base64,${e.b64}" style="width:120px;height:120px;object-fit:cover;border-radius:6px;border:1px solid #ddd">`;
-    });
-    photoHtml += '</div></div>';
-  }
-
-  const el = document.createElement('div');
-  el.style.cssText = 'font-family:Arial,sans-serif;padding:24px;color:#222;width:100%';
-  el.innerHTML = `
-    <div style="background:#1a2a4a;color:#fff;padding:14px;text-align:center;font-size:18px;font-weight:700;margin-bottom:12px">DAILY CASH COUNT SHEET</div>
-    <div style="display:flex;gap:24px;margin-bottom:14px;font-size:13px"><div><b>Date:</b> ${date}</div><div><b>Staff:</b> ${staff}</div></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div>
-        <div style="background:#3b72b8;color:#fff;padding:7px 10px;font-weight:700;font-size:13px">NOTES</div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <tr style="background:#e8edf3"><th style="padding:5px 8px;text-align:left">Value</th><th style="padding:5px 8px;text-align:right">Count</th><th style="padding:5px 8px;text-align:right">Subtotal</th></tr>
-          ${notesRows || '<tr><td colspan="3" style="padding:6px 8px;color:#999">None</td></tr>'}
-          <tr style="background:#dce8f7;font-weight:700"><td colspan="2" style="padding:6px 8px">Notes Subtotal</td><td style="padding:6px 8px;text-align:right">${document.getElementById('notes-subtotal').textContent}</td></tr>
-        </table>
-      </div>
-      <div>
-        <div style="background:#2e6e1e;color:#fff;padding:7px 10px;font-weight:700;font-size:13px">COINS</div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <tr style="background:#d8eed8"><th style="padding:5px 8px;text-align:left">Value</th><th style="padding:5px 8px;text-align:right">Count</th><th style="padding:5px 8px;text-align:right">Subtotal</th></tr>
-          ${coinsRows || '<tr><td colspan="3" style="padding:6px 8px;color:#999">None</td></tr>'}
-          <tr style="background:#d8eed8;font-weight:700"><td colspan="2" style="padding:6px 8px">Coins Subtotal</td><td style="padding:6px 8px;text-align:right">${document.getElementById('coins-subtotal').textContent}</td></tr>
-        </table>
-      </div>
+  <!-- 배경 장식 / Background decoration -->
+  <div class="bg-circle bg-circle-1"></div>
+  <div class="bg-circle bg-circle-2"></div>
+
+  <div class="card">
+    <div class="logo">🍣</div>
+    <div class="store-name">Sushi Umi</div>
+    <div class="title">Hornsby 앱이 이동했어요</div>
+
+    <div class="redirect-box">
+      <div class="redirect-label">새 앱으로 이동 중...</div>
+      <span class="redirect-arrow">→</span>
     </div>
 
-    <table style="width:55%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
-      <tr style="background:#1a2a4a"><td style="padding:9px 12px;color:#fff;font-weight:700">Total Cash in Register</td><td style="padding:9px 12px;background:#f5c518;text-align:right;font-weight:700">${document.getElementById('register-total').textContent}</td></tr>
-      <tr style="border-bottom:1px solid #eee"><td style="padding:7px 12px">Less: Opening Float</td><td style="padding:7px 12px;text-align:right">$${safeNum(document.getElementById('opening-float').value).toFixed(2)}</td></tr>
-      <tr style="background:#e6f5e6"><td style="padding:9px 12px;font-weight:700">Actual Cash Sales</td><td style="padding:9px 12px;text-align:right;font-weight:700;color:#1a7a1a">${document.getElementById('actual-sales').textContent}</td></tr>
-    </table>
+    <!-- 2초 프로그레스 바 / 2-second progress bar -->
+    <div class="progress-wrap">
+      <div class="progress-bar"></div>
+    </div>
 
-    <div style="background:#6b39b2;color:#fff;padding:7px 10px;font-weight:700;font-size:13px">SHOPPING PETTY CASH</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">
-      <tr style="background:#ede8f5"><th style="padding:5px 8px;text-align:left">Store</th><th style="padding:5px 8px;text-align:right">Amount</th></tr>
-      ${purchRows || '<tr><td colspan="2" style="padding:6px 8px;color:#999">None</td></tr>'}
-    </table>
-    <table style="width:55%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
-      <tr style="background:#ede8f5;font-weight:700"><td style="padding:6px 10px">Total Spent Today</td><td style="padding:6px 10px;text-align:right">${document.getElementById('total-purchases').textContent}</td></tr>
-      <tr style="border-bottom:1px solid #eee"><td style="padding:6px 10px">Opening Balance</td><td style="padding:6px 10px;text-align:right">$${pettyOpen.toFixed(2)}</td></tr>
-      <tr style="background:#f5c518;font-weight:700"><td style="padding:7px 10px">Expected Remaining</td><td style="padding:7px 10px;text-align:right">$${expected.toFixed(2)}</td></tr>
-      <tr style="border-bottom:1px solid #eee"><td style="padding:6px 10px">Actual Cash Remaining</td><td style="padding:6px 10px;text-align:right">$${pettyActual.toFixed(2)}</td></tr>
-      <tr style="background:${diff<0?'#fce8e8':diff>0?'#e6f5e6':'#f5f5f5'};font-weight:700"><td style="padding:7px 10px">Over / Short</td><td style="padding:7px 10px;text-align:right;color:${diff<0?'#cc2222':diff>0?'#1a7a1a':'#333'}">$${diff.toFixed(2)}</td></tr>
-    </table>
+    <!-- 혹시 자동 이동이 안 되면 버튼으로 / Manual button fallback -->
+    <a class="btn-now" href="https://restaurant-mate.netlify.app/umi-hornsby">
+      지금 바로 이동하기 →
+    </a>
 
-    ${photoHtml}
+    <!-- 홈 화면 추가 안내 (새 사이트에서도 뜨지만 미리 안내) -->
+    <!-- Add to Home Screen guidance -->
+    <div class="aths-hint">
+      <div class="hint-title">📲 홈 화면에 저장하세요</div>
+      <div class="step"><div class="num">1</div> 새 페이지 로드 후 Safari 하단 <b>공유 버튼</b> 탭</div>
+      <div class="step"><div class="num">2</div> <b>"홈 화면에 추가"</b> 선택</div>
+      <div class="step"><div class="num">3</div> 다음부터 앱처럼 바로 열려요 ✓</div>
+    </div>
+  </div>
 
-    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:40px">
-      <div style="border-bottom:1.5px solid #333;padding-bottom:4px;font-size:11px;color:#777;font-style:italic">Signature: ___________________</div>
-      <div style="border-bottom:1.5px solid #333;padding-bottom:4px;font-size:11px;color:#777;font-style:italic">Verified by: _________________</div>
-    </div>`;
-  return el;
-}
-
-function downloadPDF(){
-  if(typeof html2pdf === 'undefined'){
-    alert('PDF library not loaded. Check internet connection and reload.');
-    return;
-  }
-  const date = document.getElementById('inp-date').value || getLocalDateStr();
-  const staff = document.getElementById('inp-staff').value || 'staff';
-  const el = buildPDFElement();
-  document.body.appendChild(el);
-  html2pdf().set({
-    margin: 0.4, filename: `CashReport_${date}_${staff}.pdf`,
-    image: {type:'jpeg', quality:0.98},
-    html2canvas: {scale:2, useCORS:true, logging:false},
-    jsPDF: {unit:'in', format:'a4', orientation:'portrait'}
-  }).from(el).save().then(() => document.body.removeChild(el));
-}
-
-// ───────── 리포트 전송 ─────────
-function showStatus(type, message){
-  const statusEl = document.getElementById('status-msg');
-  statusEl.className = 'status-msg status-' + type;
-  statusEl.textContent = message;
-  statusEl.style.display = 'block';
-}
-
-async function submitReport(){
-  const gasUrl = document.getElementById('gas-url').value.trim();
-  const toEmail = document.getElementById('to-email').value.trim() || DEFAULT_TO;
-  const staff = document.getElementById('inp-staff').value.trim();
-  const date = document.getElementById('inp-date').value;
-  const btn = document.getElementById('submit-btn');
-
-  if(!gasUrl){
-    showStatus('error', 'Please enter Google Script URL in Email Settings');
-    if(!document.getElementById('setup-box').classList.contains('open')) toggleSetup();
-    return;
-  }
-  if(!staff){
-    showStatus('error', 'Please enter staff name');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Sending...';
-  document.getElementById('status-msg').style.display = 'none';
-
-  try {
-    const pettyOpen = safeNum(document.getElementById('petty-opening').value);
-    const totalPurch = safeNum(document.getElementById('total-purchases').textContent.replace('$',''));
-    const pettyActual = safeNum(document.getElementById('petty-actual').value);
-    const actualSales = safeNum(document.getElementById('actual-sales').textContent.replace('$',''));
-    const expected = pettyOpen - totalPurch;
-    const diff = pettyActual - expected;
-    const sendDate = date || getLocalDateStr();
-    const isSaturday = getDayOfWeek(sendDate) === 6;
-
-    const payload = {
-      to_email: toEmail,
-      date: sendDate,
-      staff: staff,
-      notes_subtotal: document.getElementById('notes-subtotal').textContent,
-      coins_subtotal: document.getElementById('coins-subtotal').textContent,
-      register_total: document.getElementById('register-total').textContent,
-      opening_float: '$' + safeNum(document.getElementById('opening-float').value).toFixed(2),
-      actual_sales: document.getElementById('actual-sales').textContent,
-      purchases_detail: getPurchaseLines(),
-      purchases_rows: getPurchaseRows(),
-      total_purchases: document.getElementById('total-purchases').textContent,
-      petty_opening: '$' + pettyOpen.toFixed(2),
-      petty_expected: '$' + expected.toFixed(2),
-      petty_actual: '$' + pettyActual.toFixed(2),
-      petty_diff: '$' + diff.toFixed(2),
-      photos: photoEntries.map(e => e.b64)
-    };
-
-    if(isSaturday){
-      payload.weekly_summary = buildWeeklySummary(sendDate);
-      payload.is_weekly = true;
-    }
-
-    const payloadStr = JSON.stringify(payload);
-    console.log('Sending: photos=' + photoEntries.length + ', size=' + (payloadStr.length/1024).toFixed(1) + ' KB' + (isSaturday ? ' (weekly)' : ''));
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
-
-    const response = await fetch(gasUrl, {
-      method: 'POST',
-      redirect: 'follow',
-      body: payloadStr,
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if(!response.ok) throw new Error('HTTP ' + response.status);
-
-    const result = await response.json();
-
-    if(result.status === 'success'){
-      savePettyHistory({
-        date: sendDate,
-        opening: pettyOpen,
-        actual: pettyActual,
-        spent: totalPurch,
-        sales: actualSales
-      });
-      deduplicateHistory();
-      renderPettyHistory();
-
-      const successMsg = isSaturday
-        ? '✅ Report + Weekly Summary sent!'
-        : '✅ Report sent successfully!';
-      showStatus('success', successMsg);
-      btn.textContent = '✅ Sent — Send Again';
-      btn.style.background = '#1a7a1a';
-      btn.disabled = false;
-    } else {
-      throw new Error(result.message || 'Server error');
-    }
-  } catch(err) {
-    console.error(err);
-    let msg = err.message || 'Please try again';
-    if(err.name === 'AbortError') msg = 'Timeout — request took too long';
-    showStatus('error', 'Failed: ' + msg);
-    btn.disabled = false;
-    btn.style.background = '';
-    btn.textContent = SEND_BTN_LABEL;
-  }
-}
-
-// ───────── 자동 저장/복원 ─────────
-const FIELD_CLASSES = ['notes-count','coins-count','purch-amt','purch-store'];
-const SIMPLE_FIELDS = ['opening-float','petty-opening','petty-actual','inp-staff','inp-date'];
-
-function saveFormData(){
-  const data = {};
-  FIELD_CLASSES.forEach(cls => {
-    document.querySelectorAll('.' + cls).forEach((el, i) => {
-      data[cls + '_' + i] = el.value;
-    });
-  });
-  SIMPLE_FIELDS.forEach(id => {
-    data[id] = document.getElementById(id).value;
-  });
-  localStorage.setItem('cashform', JSON.stringify(data));
-}
-
-function restoreFormData(){
-  try {
-    const data = JSON.parse(localStorage.getItem('cashform') || '{}');
-    const saved = data['inp-date'];
-    const today = getLocalDateStr();
-    if(saved !== today) return;
-
-    FIELD_CLASSES.forEach(cls => {
-      document.querySelectorAll('.' + cls).forEach((el, i) => {
-        const v = data[cls + '_' + i];
-        if(v) el.value = v;
-      });
-    });
-    SIMPLE_FIELDS.forEach(id => {
-      const v = data[id];
-      if(v && id !== 'inp-date') document.getElementById(id).value = v;
-    });
-    calcAll();
-  } catch(e) {
-    console.warn('Restore failed:', e);
-  }
-}
-
-function clearAll(){
-  if(!confirm('Clear all data? This cannot be undone.\n(History log will be preserved)')) return;
-  localStorage.removeItem('cashform');
-  document.querySelectorAll('input[type=number]').forEach(i => i.value = '');
-  document.querySelectorAll('.purch-store').forEach(i => i.value = '');
-  document.getElementById('inp-staff').value = '';
-  document.getElementById('photo-preview').innerHTML = '';
-  document.getElementById('photo-count').textContent = '';
-  photoEntries.length = 0;
-  document.getElementById('petty-opening').classList.remove('autofilled');
-  document.getElementById('inp-date').value = getLocalDateStr();
-  calcAll();
-  updateWeeklyBanner();
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = false;
-  btn.textContent = SEND_BTN_LABEL;
-  btn.style.background = '';
-  document.getElementById('status-msg').style.display = 'none';
-  autofillOpeningFromYesterday();
-}
-
-// ───────── 초기화 ─────────
-document.querySelectorAll('input').forEach(i => i.addEventListener('input', saveFormData));
-
-document.getElementById('inp-date').addEventListener('change', () => {
-  renderPettyHistory();
-  updateWeeklyBanner();
-});
-
-const todayStr = getLocalDateStr();
-document.getElementById('inp-date').value = todayStr;
-const lastSaved = JSON.parse(localStorage.getItem('cashform') || '{}');
-if(lastSaved['inp-date'] && lastSaved['inp-date'] !== todayStr){
-  localStorage.removeItem('cashform');
-} else {
-  restoreFormData();
-}
-calcAll();
-updateWeeklyBanner();
-
-// ✨ 서버 동기화 후 자동완성 (네트워크 응답 후 덮어씀)
-syncHistoryFromServer().finally(() => {
-  autofillOpeningFromYesterday();
-});
-
-
-</script>
+  <script>
+    // 2초 후 자동 이동 (meta refresh 백업)
+    // Auto-redirect after 2 seconds (meta refresh as backup)
+    setTimeout(function() {
+      window.location.replace('https://restaurant-mate.netlify.app/umi-hornsby');
+    }, 2000);
+  </script>
 </body>
 </html>
